@@ -40,7 +40,7 @@ An extremely naive example is included in the `simple_kaitai_example/` folder to
   Folder containing C++ wrapper code (as provided by Kaitai) for interfacing with C++ stream operators. These are needed to correctly compile and execute your program but you *shouldn't* have to make any changes.
 
 
-###### Running the Example
+##### Running the Example
 
 This example assumes that you have installed the Kaitai Struct Compiler and was run using g++ on Ubuntu 16.04 but it should adapt to other compilers/environments will little to no modification.
 
