@@ -84,14 +84,6 @@ types:
       format_version:
         value: ((packed & 0x0f_ff_f0_00) >> 12)
 
-    #   - id: total_triggers
-    #     type: b12
-    #   - id: format_version
-    #     type: b16
-    #   - id: overall_header
-    #     type: b4
-    #     enum: headers
-
   v_one_trigger:
     seq:
       - id: trigger_meta
@@ -101,13 +93,6 @@ types:
         type: primitive
         repeat: expr # repeat for number of primitives
         repeat-expr: trigger_meta.num_primitives
-
-      # - id: detectors_in_event
-      #   type: b28
-
-      # - id: det_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed
         type: u4
@@ -135,13 +120,6 @@ types:
         repeat: expr # repeat for number of primitives
         repeat-expr: trigger_meta.num_primitives
 
-      # - id: detectors_in_event
-      #   type: b28
-
-      # - id: det_header
-      #   type: b4
-      #   enum: headers
-
       - id: packed
         type: u4
 
@@ -160,12 +138,6 @@ types:
 
   v_one_trig_meta:
     seq:
-      # - id: event_size
-      #   type: b28
-
-      # - id: trig_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_1
         type: u4
@@ -183,12 +155,6 @@ types:
       - id: global_timestamp_high
         type: u4
 
-      # - id: num_primitives
-      #   type: b28
-
-      # - id: prim_header
-      #   type: b4
-      #   enum: headers
       - id: packed_2
         type: u4
 
@@ -213,12 +179,6 @@ types:
 
   v_two_trig_meta:
     seq:
-      # - id: event_size
-      #   type: b28
-
-      # - id: trig_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_1
         type: u4
@@ -229,13 +189,6 @@ types:
       - id: event_number
         type: u4
 
-      # - id: trigger_type
-      #   type: u1
-      #   enum: trigger_types
-
-      # - id: readout_bitmask
-      #   type: b24
-
       - id: packed_2
         type: u4
 
@@ -244,13 +197,6 @@ types:
 
       - id: global_timestamp_high
         type: u4
-
-      # - id: num_primitives
-      #   type: b28
-
-      # - id: prim_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_3
         type: u4
@@ -286,29 +232,12 @@ types:
 
   primitive:
     seq:
-      # - id: index
-      #   type: b2
-      # - id: det_id
-      #   type: b8
-      # - id: pileup
-      #   type: b2
-      # - id: trig_status
-      #   type: b4
-      # - id: empty
-      #   type: b12
-      # - id: prim_dcrc_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_1
         type: u4
 
       - id: ut
         type: u4
-      # - id: rt_time_fraction
-      #   type: b24
-      # - id: empty2
-      #   type: u1
 
       - id: packed_2
         type: u4
@@ -317,11 +246,6 @@ types:
         type: u2
       - id: trig_time
         type: u2
-
-      # - id: trig_time_fraction
-      #   type: b24
-      # - id: mask_pairs
-      #   type: u1
 
       - id: packed_3
         type: u4
@@ -370,18 +294,6 @@ types:
 
   det_meta:
     seq:
-      # - id: index
-      #   type: b4
-
-      # - id: det_id
-      #   type: b6
-
-      # - id: det_type
-      #   type: b18
-
-      # - id: dcrc_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_1
         type: u4
@@ -398,34 +310,11 @@ types:
       - id: dcrc1_serial_num
         type: u1
 
-      # - id: series_time
-      #   type: u2
-
-      # - id: readout_status
-      #   type: b12
-
-      # - id: readout_header
-      #   type: b4
-      #   enum: headers
-
       - id: packed_2
         type: u4
 
-      # - id: series_time_fraction
-      #   type: b24
-
-      # - id: empty
-      #   type: u1
-
       - id: packed_3
         type: u4
-
-      # - id: num_channels_to_follow
-      #   type: b28
-
-      # - id: channel_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed_4
         type: u4
@@ -471,15 +360,6 @@ types:
 
   channel:
     seq:
-      # - id: ch_type
-      #   type: b2   # a 2 bit integer
-      # - id: ch_num
-      #   type: b4
-      # - id: pre_trigger_offset
-      #   type: b22
-      # - id: chnl_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed
         type: u4
@@ -498,9 +378,6 @@ types:
         type: u2
         repeat: expr
         repeat-expr: n_pre_pulse_samples + n_on_pulse_samples + n_post_pulse_samples
-        # NOTE - not sure about sampling to end of stream, is the
-        #        total samples = pre-pulse + on-pulse + post-pulse?
-
 
     instances:
 
@@ -519,11 +396,6 @@ types:
 
   trailer:
     seq:
-      # - id: n_preceeding_triggers
-      #   type: b28
-      # - id: trailer_header
-      #   type: b4
-      #   enum: headers
 
       - id: packed
         type: u4
