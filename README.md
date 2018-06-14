@@ -13,7 +13,7 @@ This library makes use of Kaitai Struct, available [here](http://kaitai.io/ "Kai
 
 Kaitai provides two tools in order to develop the code associated with your data format.
 
-1. Kaitai-Struct-Compiler: The compiler performs the heavy lifting and generates the source code associated with your format. It takes the .ksy file and creates the code (in a language specified by the user) for interacting with the binary data.
+1. Kaitai-Struct-Compiler: The compiler performs the heavy lifting and generates the source code associated with your format. It takes a user-created  .ksy file and creates the code (in a language specified by the user) for interacting with the binary data.
 
 
 2. Kaitai-Struct-Visualizer: The visualizer is installed as a ruby gem and is primarily used as a debugging tool for your data descriptor. It takes a binary file and your .ksy file as inputs and creates a visual representation of the format.
