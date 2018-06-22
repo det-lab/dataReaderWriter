@@ -23,36 +23,28 @@ Kaitai provides two tools in order to develop the code associated with your data
 
 An extremely naive example is included in the `simple_kaitai_example/` folder to demonstrate the usage of Kaitai Struct in building a data format from scratch. It also acts as a test for your installation of the kaitai-struct-compiler and/or kaitai-struct-visualizer. The folder includes the following items:
 
-* animal.ksy
-
+* `animal.ksy`
   This is a simple .ksy file that describes a binary format. The structure is fairly contrived but it provides an easy introduction into Katai. The example describes a file that contains a sequence of entries with each representing an animal. Each animal has a species, an age, and a weight associated with it.
 
-* animal_raw
-
+* `animal_raw`
   A binary file containing entries in the format described in animal.ksy
 
-* src/
-
-  - main.cpp
-
-    A simple program for reading the contents of the file and writing the data to standard output.
-
-  - kaitai/
-
-    Folder containing C++ wrapper code (as provided by Kaitai) for interfacing with C++ stream libraries. These are needed to correctly compile and execute your program but you *shouldn't* have to make any changes.
-    
+* `src/`
     Folder containing the source code that you will compile to run the example.
 
-* bin/
+  - `main.cpp`
+    A simple program for reading the contents of the file and writing the data to standard output.
 
+  - `kaitai/`
+    Folder containing C++ wrapper code (as provided by Kaitai) for interfacing with C++ stream libraries. These are needed to correctly compile and execute your program but you *shouldn't* have to make any changes.
+    
+* `bin/`
   Directory containing executable binaries
 
-* setup.sh
-  
+* `setup.sh`
   Shell script to compile source code and organize resulting files
 
-* run.sh
-
+* `run.sh`
   Shell script to run the example.
 
 
