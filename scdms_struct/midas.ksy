@@ -14,9 +14,6 @@ seq:
   - id: n_events
     type: event
     repeat: eos
-    # repeat-expr: eos # NOTE - how many times does this repeat? The number of
-                     #        events isn't immediately obvious. but it's
-                     #        possible the end of stream will work?
 
 types:
 

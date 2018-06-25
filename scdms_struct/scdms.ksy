@@ -261,7 +261,7 @@ types:
       index:
         value: (packed_1 & 0x00_00_00_03)
       det_id:
-        value: ((packed_1 & 0x00_00_03_fc) >> 2) # this is probably wrong
+        value: ((packed_1 & 0x00_00_03_fc) >> 2)
       pileup:
         value: ((packed_1 & 0x00_00_0c_00) >> 10)
       trig_status:
