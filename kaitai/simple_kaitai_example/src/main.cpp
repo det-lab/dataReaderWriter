@@ -9,7 +9,7 @@ using namespace std;
 int main() {
 
   /* Open the input file in binary mode */
-  ifstream infile("animal_raw", ifstream::binary);
+  ifstream infile("data/animal_raw", ifstream::binary);
 
   /* Create a kaitai stream of the source file */
   kaitai::kstream ks(&infile);

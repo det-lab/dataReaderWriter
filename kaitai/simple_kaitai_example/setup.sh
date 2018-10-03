@@ -10,7 +10,7 @@ if [ -e "$CPP" ] && [ -e "$HEADER" ]; then
 else 
     if ! [ -e src/"$CPP" ] || ! [ -e src/"$HEADER" ]; then
     echo "$CPP or $HEADER do not exist. Please first execute:"
-    echo "\$ kaitai-struct-compiler -t cpp_stl animal.ksy"
+    echo "\$ kaitai-struct-compiler -t cpp_stl ksy/animal.ksy"
     exit 1
     fi
 fi
