@@ -2,7 +2,7 @@
 
 CPP=animal.cpp
 HEADER=animal.h
-EXE=animalExample
+EXE=kaitaiAnimalExample
 
 if [ -e "$CPP" ] && [ -e "$HEADER" ]; then
     mv animal.cpp src/
@@ -22,7 +22,8 @@ make -f makefile
 
 # Move resulting executable to bin/ directory
 if [ -e "$EXE" ]; then
-    mv animalExample bin/
+    mkdir bin
+    mv "$EXE" bin/
     rm *.o # remove intermediate object files generated from makefile
     echo "Build Successful. To execute program run: ./run.sh"
-fi
+fi 

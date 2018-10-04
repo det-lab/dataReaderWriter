@@ -11,7 +11,7 @@ LIBS = # -lm	the -lm flag links to linux math library but it isn't needed in thi
 
 OBJS = main.o animal.o kaitaistream.o
 
-TARGET = animalExample
+TARGET = kaitaiAnimalExample
 
 $(TARGET): $(OBJS)
 		$(CC) -o $@ $(OBJS) $(LIBDIR) $(LIBS)

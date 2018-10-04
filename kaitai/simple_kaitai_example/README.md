@@ -17,9 +17,6 @@ An extremely naive example is included here to demonstrate the usage of Kaitai S
   - `kaitai/`
     Folder containing C++ wrapper code (as provided by Kaitai) for interfacing with C++ stream libraries. These are needed to correctly compile and execute your program but you *shouldn't* have to make any changes.
     
-* `bin/`
-  Destination directory for compiled executable
-
 * `setup.sh`
   Shell script to compile source code and organize resulting files
 

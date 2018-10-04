@@ -1,11 +1,11 @@
 #!/bin/bash
 
-EXE=bin/animalExample
+EXE=bin/kaitaiAnimalExample
 
 if [ -e "$EXE" ]; then
-    ./bin/animalExample
+    ./"$EXE"
 else
-    echo "Error: /bin/animalExample does not exist"
+    echo "Error: $EXE does not exist"
     echo "Please execute ./setup.sh to create executable"
     echo ""
     exit 1
