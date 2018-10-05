@@ -3,7 +3,7 @@ meta:
   #file-extension: NOTE - The scdms format is encapsulated
   # within a midas file so it won't have its own extension
   endian: le
-  # license:
+  license: MIT
   ks-version: 0.8
 
 seq:

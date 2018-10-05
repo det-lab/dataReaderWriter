@@ -4,6 +4,7 @@ meta:
   id: midas
   file-extension: mid
   endian: le
+  license: MIT
   ks-version: 0.8
 
   imports:
