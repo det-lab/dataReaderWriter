@@ -1,8 +1,8 @@
 
-
 meta:
   id: animal
   endian: le
+  license: CC0-1.0
   ks-version: 0.8
 
 seq:
