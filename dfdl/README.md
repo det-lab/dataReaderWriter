@@ -12,7 +12,7 @@ The example presented here models a set of physics data and includes the followi
   Folder containing data files corresponding to the schema.
   
   - `scdms_raw.bin`
-    This is a sample set of SCDMS data in its raw binary format. You can look at the `SuperCDMS_Data_Format.xlsx` file for a description of the file structure.
+    This is a sample set of SCDMS data in its raw binary format. <!-- You can look at the `SuperCDMS_Data_Format.xlsx` file for a description of the file structure. -->
 
   - `scdms_xml_data.xml`
     This xml file was previously generated using the schema definition to show what the results of a correct parse into xml looks like.
