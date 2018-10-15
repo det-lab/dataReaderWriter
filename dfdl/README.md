@@ -72,7 +72,7 @@ but it can be run from anywhere assuming you modify the file paths. Daffodil req
   or on Windows use the daffodil.bat script:
 
   ```
-  > .\bin\daffodil.bat parse -s ..\src\scdms\xsd\scdms\dfdl.xsd -c ..\src\scdms\xsd\config.xml -o ..\data\my_xml_file.xml ..\data\scdms_raw.bin
+  > .\bin\daffodil.bat parse -s ..\src\scdms\xsd\scdms.dfdl.xsd -c ..\src\scdms\xsd\config.xml -o ..\data\my_xml_file.xml ..\data\scdms_raw.bin
   ```
 
 3. Your output file should now be in the `data/` folder. You can compare with existing `scdms_xml_data.xml` file to see if the parse worked correctly.
