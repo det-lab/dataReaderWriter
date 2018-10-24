@@ -112,7 +112,7 @@ Daffodil is currently under development as an Apache Incubator project. Document
 ##### Daffodil Resources:
 
 * [Getting Started](https://daffodil.apache.org/getting-started/) - Includes information on the command line options etc.
-* [Mailing List and Community](https://daffodil.apache.org/community/)
+* [Mailing List and Community](https://daffodil.apache.org/community/) - The Daffodil community is very responsive and extremely helpful for questions.
 * [Github Repository](https://github.com/apache/incubator-daffodil)
 * [Examples](https://daffodil.apache.org/examples/)
 
