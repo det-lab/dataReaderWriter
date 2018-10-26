@@ -1,6 +1,6 @@
 ## What is Daffodil?
 
-Daffodil is an open source implementation of the Data Format Description Language (DFDL). It builds upon the XML Schema language to provide an author a standard way to describe a variety of data formats. The DFDL specification is managed by the [Open Grid Forum](https://www.ogf.org/ogf/doku.php/standards/dfdl/dfdl "Open Grid Forum"). See the resources section below for more links to helpful user documentation about Daffodil as well as XML/XSD.
+Daffodil is an open source implementation of the Data Format Description Language (DFDL). It builds upon the XML Schema language to provide an author a standard way to describe a variety of data formats. The DFDL specification is managed by the [Open Grid Forum](https://www.ogf.org/ogf/doku.php/standards/dfdl/dfdl "Open Grid Forum"). See the [resources](#links-to-resources) section below for more links to helpful user documentation about Daffodil as well as XML/XSD.
 
 
 ### SCDMS Example
