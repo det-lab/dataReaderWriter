@@ -1,0 +1,222 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<!--
+
+  Copyright (c) 2018 Brett Gedvilas, University of Colorado Denver
+
+  Permission is hereby granted, free of charge, to any person obtaining a copy
+  of this software and associated documentation files (the "Software"), to deal
+  in the Software without restriction, including without limitation the rights
+  to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+  copies of the Software, and to permit persons to whom the Software is
+  furnished to do so, subject to the following conditions:
+
+  The above copyright notice and this permission notice shall be included in all
+  copies or substantial portions of the Software.
+
+  THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+  IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+  FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+  AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+  LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+  OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+  SOFTWARE.
+
+-->
+
+<!-- This dfdl schema file defines the base MIDAS Bank Structure and encapsulates the scdms version 4 format within the BANK32 midas structure -->
+
+<!-- TODO Size of data block? Or is it implicitly figured out by the scdms format? -->
+
+
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+          xmlns:dfdl="http://www.ogf.org/dfdl/dfdl-1.0/" >
+
+  <xs:include schemaLocation="org/apache/daffodil/xsd/DFDLGeneralFormat.dfdl.xsd" />
+
+  <xs:annotation>
+    <xs:appinfo source="http://www.ogf.org/dfdl/">
+      <dfdl:format ref="GeneralFormat"
+                   representation="binary" alignmentUnits="bits" lengthUnits="bits"
+                   byteOrder="littleEndian" bitOrder="leastSignificantBitFirst" lengthKind="explicit" />
+    </xs:appinfo>
+  </xs:annotation>
+
+  <xs:element name="midas_event" dfdl:lengthKind="implicit" >
+    <xs:complexType>
+      <xs:sequence>
+        <xs:element name="midas_event_header" dfdl:lengthKind="implicit" >
+          <xs:complexType>
+            <xs:element name="trigger_mask" type="xs:unsignedInt" dfdl:length="16" />
+            <xs:element name="event_id" type="xs:unsignedInt" dfdl:length="16" />
+            <xs:element name="serial_number" type="xs:unsignedInt" dfdl:length="32" />
+            <xs:element name="time_stamp" type="xs:unsignedInt" dfdl:length="32" />
+            <xs:element name="event_size_bytes" type="xs:unsignedInt" dfdl:length="32" />
+          </xs:complexType>
+        </xs:element>
+        <xs:element name="bank_header" dfdl:lengthKind="implicit" >
+          <xs:complexType>
+            <xs:element name="all_bank_size" type="xs:unsignedInt" dfdl:length="32" />
+            <xs:element name="flags" type="xs:unsignedInt" dfdl:length="32" />
+          </xs:complexType>
+        </xs:element>
+
+        <xs:element name="bank32" dfdl:lengthkind="implicit" >
+          <xs:complexType>
+            <xs:sequence>
+              <xs:element name="bank_name" type="xs:unsignedInt" dfdl:length="32" />
+              <xs:element name="type" type="xs:unsignedInt" dfdl:length="32" />
+              <xs:element name="bank_size_bytes" type="xs:unsignedInt" dfdl:length="32" />
+              <xs:element name="scdms_event_v4" dfdl:lengthKind="implicit" >
+                <xs:complexType>
+                  <xs:sequence>
+                    <xs:element name="Event_Header" dfdl:occursCountKind="fixed" dfdl:lengthKind="implicit" >
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="total_triggers" type="xs:unsignedInt" dfdl:length="12" />
+                          <xs:element name="format_version" type="xs:unsignedInt" dfdl:length="16" />
+                          <xs:element name="overall_header" type="xs:unsignedInt" dfdl:length="4" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                    <xs:element name="Trigger" dfdl:occursCountKind="expression" dfdl:lengthKind="implicit" dfdl:occursCount="{../Event_Header/total_triggers}" >
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="event_size" type="xs:unsignedInt" dfdl:length="28" />
+                          <xs:element name="trigger_header" type="xs:unsignedInt" dfdl:length="4" />
+                          
+                          <xs:element name="trigger_ID" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="event_number" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="trigger_type" type="xs:unsignedInt" dfdl:length="8" />
+                          <xs:element name="readout_type" type="xs:unsignedInt" dfdl:length="24" />
+
+                          <xs:element name="timestamp_low" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="timestamp_high" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="polling_cycle_end_time_seconds" type="xs:unsignedInt" dfdl:length="16" />
+
+                          <xs:element name="blank" type="xs:unsignedInt" dfdl:length="16" />
+
+                          <xs:element name="time_fraction_polling_cycle_end_time" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="n_prims_in_event" type="xs:unsignedInt" dfdl:length="28" />
+                          <xs:element name="primitive_header" type="xs:unsignedInt" dfdl:length="4" />
+
+                          <xs:element name="entry_length" type="xs:unsignedInt" dfdl:length="32" />
+
+                          <xs:element name="Primitive" dfdl:occursCountKind="expression" dfdl:lengthKind="implicit" dfdl:occursCount="{../n_prims_in_event}" >
+                            <xs:complexType>
+                              <xs:sequence>
+                                  <xs:element name="index" type="xs:unsignedInt" dfdl:length="2" />
+                                  <xs:element name="detector_id" type="xs:unsignedInt" dfdl:length="8" />
+                                  <xs:element name="pileup" type="xs:unsignedInt" dfdl:length="2" />
+                                  <xs:element name="trig_status" type="xs:unsignedInt" dfdl:length="4" />
+                                  <xs:element name="blank" type="xs:unsignedInt" dfdl:length="12" />
+                                  <xs:element name="prim_DCRC_header" type="xs:unsignedInt" dfdl:length="4" />
+
+                                  <xs:element name="ut" type="xs:unsignedInt" dfdl:length="32" />
+                                  
+                                  <xs:element name="rt_time_fraction" type="xs:unsignedInt" dfdl:length="24" />
+                                  <xs:element name="blank" type="xs:unsignedInt" dfdl:length="8" />
+
+                                  <xs:element name="rt_time_sec" type="xs:unsignedInt" dfdl:length="16" />
+                                  <xs:element name="trigger_time_sec" type="xs:unsignedInt" dfdl:length="16" />
+                                  
+                                  <xs:element name="time_fraction_of_trigger" type="xs:unsignedInt" dfdl:length="24" />
+                                  <xs:element name="mask_pairs" type="xs:unsignedInt" dfdl:length="8" />
+
+                                  <xs:element name="blank" type="xs:unsignedInt" dfdl:length="16" />
+                                  <xs:element name="trigger_word" type="xs:unsignedInt" dfdl:length="16" />
+
+                                  <xs:element name="peak_amplitude" type="xs:unsignedInt" dfdl:length="32" />
+                                  
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+
+                          <xs:element name="num_detectors_in_event" type="xs:unsignedInt" dfdl:length="28" />
+                          <xs:element name="detector_header" type="xs:unsignedInt" dfdl:length="4" />
+
+                          <xs:element name="Detector" dfdl:occursCountKind="expression" dfdl:lengthKind="implicit" dfdl:occursCount="{../num_detectors_in_event}" >
+                            <xs:complexType>
+                              <xs:sequence>
+                                <xs:element name="index" type="xs:unsignedInt" dfdl:length="2" />
+                                <xs:element name="detector_id" type="xs:unsignedInt" dfdl:length="8" />
+                                <xs:element name="detector_type" type="xs:unsignedInt" dfdl:length="18" />
+                                <xs:element name="DCRC_header" type="xs:unsignedInt" dfdl:length="4" />
+
+                                <xs:element name="DCRC0_version" type="xs:unsignedInt" dfdl:length="8" />
+                                <xs:element name="DCRC0_serial_num" type="xs:unsignedInt" dfdl:length="8" />
+                                <xs:element name="DCRC1_version" type="xs:unsignedInt" dfdl:length="8" />
+                                <xs:element name="DCRC1_serial_num" type="xs:unsignedInt" dfdl:length="8" />
+                                
+                                <xs:element name="series_time_sec" type="xs:unsignedInt" dfdl:length="16" />
+                                <xs:element name="readout_status" type="xs:unsignedInt" dfdl:length="12" />
+                                <xs:element name="readout_header" type="xs:unsignedInt" dfdl:length="4" />
+                                
+                                <xs:element name="series_time_fraction" type="xs:unsignedInt" dfdl:length="24" />
+                                <xs:element name="blank" type="xs:unsignedInt" dfdl:length="8" />
+
+                                <xs:element name="waveform_read_end_time_sec" type="xs:unsignedInt" dfdl:length="16" />
+
+                                <xs:element name="waveform_read_start_time_sec" type="xs:unsignedInt" dfdl:length="16" />
+
+                                <xs:element name="time_fraction_of_waveform_read_start" type="xs:unsignedInt" dfdl:length="32" />
+
+                                <xs:element name="time_fraction_of_waveform_read_end" type="xs:unsignedInt" dfdl:length="32" />
+
+
+                                <xs:element name="n_channels_to_follow" type="xs:unsignedInt" dfdl:length="28" />
+                                <xs:element name="channel_header" type="xs:unsignedInt" dfdl:length="4" />
+
+                                <xs:element name="Channel" dfdl:lengthKind="implicit" minOccurs="0" maxOccurs="unbounded"
+                                  dfdl:occursCountKind="expression" dfdl:occursCount="{ ../num_channels }" >
+                                  <xs:complexType>
+                                    <xs:sequence>
+                                      <xs:element name="channel_type" type="xs:unsignedInt" dfdl:length="2" />
+                                      <xs:element name="channel_number" type="xs:unsignedInt" dfdl:length="4" />
+                                      <xs:element name="pre_trig_offset" type="xs:unsignedInt" dfdl:length="22" />
+                                      <xs:element name="waveform_header" type="xs:unsignedInt" dfdl:length="4" />
+                                      
+                                      <xs:element name="num_pre_pulse_samples" type="xs:unsignedInt" dfdl:length="32" />
+                                      <xs:element name="num_on_pulse_samples" type="xs:unsignedInt" dfdl:length="32" />
+                                      <xs:element name="num_post_pulse_samples" type="xs:unsignedInt" dfdl:length="32" />
+
+                                      <xs:element name="sampling_rate_low" type="xs:unsignedInt" dfdl:length="16" />
+                                      <xs:element name="sampling_rate_high" type="xs:unsignedInt" dfdl:length="16" />
+
+                                      <xs:element name="sample" type="xs:unsignedInt" dfdl:length="16" minOccurs="0" maxOccurs="unbounded" dfdl:occursCountKind="expression" dfdl:occursCount="{ ../num_pre_pulse_samples +  ../num_on_pulse_samples + ../num_post_pulse_samples }" />
+                                    </xs:sequence>
+                                  </xs:complexType>
+                                </xs:element>
+                              </xs:sequence>
+                            </xs:complexType>
+                          </xs:element>
+                        </xs:sequence>
+
+                      </xs:complexType>
+                    </xs:element> <!-- End of Trigger -->
+
+                    <xs:element name="Footer" dfdl:lengthKind="implicit" >
+                      <xs:complexType>
+                        <xs:sequence>
+                          <xs:element name="num_preceeding_triggers" type="xs:unsignedInt" dfdl:length="28" />
+                          <xs:element name="trailer" type="xs:unsignedInt" dfdl:length="4" />
+                        </xs:sequence>
+                      </xs:complexType>
+                    </xs:element>
+                  </xs:sequence>
+                </xs:complexType>
+              </xs:element>
+            </xs:sequence>
+          </xs:complexType>
+        </xs:element>
+
+      </xs:sequence>
+    </xs:complexType>
+
+
+</xs:schema>
