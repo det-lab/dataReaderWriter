@@ -28,6 +28,7 @@
 
 <!-- TODO Size of data block? Or is it implicitly figured out by the scdms format? -->
 
+<!-- TODO Midas structure has a block with odb at beginning and end, still needs to be implemented here -->
 
 <xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
           xmlns:dfdl="http://www.ogf.org/dfdl/dfdl-1.0/" >
