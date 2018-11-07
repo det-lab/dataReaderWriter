@@ -2,6 +2,8 @@
 
 ## A library for reading and writing binary physics data into a structured format.
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1479913.svg)](https://doi.org/10.5281/zenodo.1479913)
+
 One of the issues currently facing the physics community is the highly variable nature of experimental data formats. Analysis software is often tightly coupled to a particular binary data format. There may be many unique formats due to the nature of experimental design, or as a byproduct of the hardware available to researchers. This means that a great analysis tool that is available might be useless to you if your data is in the incorrect format. Simplifying the process of needing to integrate a unique data format into every piece of analysis code is therefore of great value. 
 
 This repository seeks to demonstrate and evaluate the use of existing tools to declaratively define the structure of binary data, in an effort to streamline user interaction with raw binary data. The tools currently being evaluated are Kaitai Struct and Daffodil. An extremely brief overview is given below:
