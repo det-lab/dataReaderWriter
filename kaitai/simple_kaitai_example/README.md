@@ -37,15 +37,21 @@ If you don't have a hex chart handy; this entry is a 6 year old cow that weighs 
 
 ## Running the Example
 
-This example assumes that you have installed the Kaitai Struct Compiler and was run on Ubuntu 16.04 using the *g++* and *make* utilities. It should adapt to other Linux environments with little to no modification. Instructions for compiling on Windows are included below but have not been extensively tested and are not recommended.
+This example assumes that you have installed the Kaitai Struct Compiler and was run on Ubuntu 16.04 using the *g++* and *make* utilities. Example commands are BASH specific. It should adapt to other Linux environments with little to no modification. Instructions for compiling on Windows are included below but have not been extensively tested and are not recommended.
 
-1. First, you need to generate the C++ code corresponding to the .ksy file. From a bash window, navigate to the `simple_kaitai_example/` directory and execute:
+0. Move into the simple example directory:
+`$ cd <dataReaderWriter_directory>/kaitai/simple_kaitai_example`
+
+1. First, you need to generate the C++ code corresponding to the .ksy file:
 
   ```
-  $ kaitai-struct-compiler -t cpp_stl ksy/animal.ksy
+  $ kaitai-struct-compiler -t cpp_stl ksy/animal.ksy -d src/
   ```
 
-  This command is fairly straightforward, the -t flag designates what target language to generate code for (i.e. c++) and the final option is the .ksy file to use to generate the code. This should generate a `animal.h` and `animal.cpp` in your working directory. Now you have everything you need to easily interact with a binary file.
+  This command is fairly straightforward, the -t flag designates what target language to generate code for (i.e. c++), followed by the .ksy file to use to generate the code, and the `-d` flag specifies the output directory for generated code. This should generate `animal.h` and `animal.cpp` in `./src` . Now you have everything you need to easily interact with a binary file.  
+**NOTE** some versions of `kaitai-struct-compiler` have an issue with Java versions. If you receive an error that 'Java version 1.6+ is required', you can workaround it by adding the no version check flag: 
+
+``$ kaitai-struct-compiler -t cpp_stl -no-version-check ksy/animal.ksy``
 
 2. The next step is to compile the source code and link into your program. The `main.cpp` file provided was written in advance for the example. It simply reads the binary file and echos the contents (with some formatting for readability) to standard output. You can make changes in order to experiment, but to use as-is you simply need to execute the following commands. A makefile along with two shell scripts are provided and configured to automate the process but it can be done manually as well. From the `simple_kaitai_example/` directory:
 
