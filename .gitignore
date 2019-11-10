@@ -1,3 +1,6 @@
+kaitai/simple_kaitai_example/bin/
+kaitai/simple_kaitai_example/src/animal.*
+
 *.o
 *.so
 
