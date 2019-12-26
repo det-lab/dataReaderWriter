@@ -3,7 +3,7 @@
 #include <iostream> // std::cout
 #include <fstream>  // std::ifstream
 #include <string>   // duh
-#include <bitset>   // for reading binary 
+#include <assert.h>   // for fancy erroring
 
 #include "awkward/Slice.h"
 #include "awkward/fillable/FillableArray.h"
@@ -41,6 +41,7 @@ while (rf.peek() != EOF){
 
   char species_len;
   rf.read(&species_len,1);
+  assert(!rf.eof());
   std::cout << "Length of species name: " << (int)species_len << std::endl;
 
   char name[(int)species_len];
