@@ -11,12 +11,6 @@
 
 namespace ak = awkward;
 
-struct Animal {
-  std::string species;
-  int age;
-  int weight;
-};
-
 int main(int, char**){
 
   std::ifstream rf("/home/josh/dev/dataReaderWriter/kaitai/simple_kaitai_example/data/animal_raw", std::ifstream::out | std::ifstream::binary);
@@ -28,8 +22,6 @@ int main(int, char**){
   ak::FillableArray animals(ak::FillableOptions(1024, 2.0));
 
   while (rf.peek() != EOF){
-  
-    //Animal this_one;
   
     // start record for i-th animal
     animals.beginrecord();
@@ -68,6 +60,7 @@ int main(int, char**){
   std::shared_ptr<ak::Content> array = animals.snapshot();
   std::cout << array.get()-> tojson(false,1);
 
+  return 0;
 }
 ////// Awkward stuff for later //////
 //  create fillable array
