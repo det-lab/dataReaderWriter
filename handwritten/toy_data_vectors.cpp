@@ -11,32 +11,25 @@
 
 namespace ak = awkward;
 
-// ideal struct
 struct Animal {
   std::string species;
   int age;
   int weight;
 };
 
-// literal struct
-struct Thing {
-  char spec_len;
-  std::string spec;
-};
+int main(int, char**){
+  
+std::ifstream rf("/home/josh/dev/dataReaderWriter/kaitai/simple_kaitai_example/data/animal_raw", std::ifstream::out | std::ifstream::binary);
 
-int main(int, char**) 
-{
-  std::ifstream rf("/home/josh/dev/dataReaderWriter/kaitai/simple_kaitai_example/data/animal_raw", std::ifstream::out | std::ifstream::binary);
-  if(!rf){
+if(!rf){
     std::cout << "Cannot open file!" << std::endl;
     return 1;
   }
-//Animal animals[3];
 
 std::vector<Animal> animals;
 
-//for (int i=0; i<3; i++){  
 while (rf.peek() != EOF){
+
   Animal this_one;
 
   char species_len;
@@ -56,23 +49,11 @@ while (rf.peek() != EOF){
 
   char weight_char[2];
   rf.read(&weight_char[0],2);
-  //this_one.weight = (int)weight_char;
-  //std::cout << "\nWeight: " << this_one.weight;
   for (int i=0; i<2; i++) {std::cout << (int)weight_char[i] << " ";}
   std::cout << std::endl;
 
   animals.push_back(this_one);
   }    
   
-////// Awkward stuff for later //////
-//  create fillable array
-//  ak::FillableArray myarray(ak::FillableOptions(1024, 2.0));
-//  
-//  // take a snapshot 
-//  std::shared_ptr<ak::Content> array = myarray.snapshot();
-//
-//  // check output 
-//  if (array.get()->tojson(false,1) != "[{\"one\":true,\"two\":1,\"three\":1.1},{\"one\":false,\"two\":2,\"three\":2.2},{\"one\":true,\"two\":3,\"three\":3.3}]")
-//    {return -1;}
-//  return 0;
+return 0;
 }

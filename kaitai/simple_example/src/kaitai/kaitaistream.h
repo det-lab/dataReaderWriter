@@ -2,7 +2,7 @@
 #define KAITAI_STREAM_H
 
 // Kaitai Struct runtime API version: x.y.z = 'xxxyyyzzz' decimal
-#define KAITAI_STRUCT_VERSION 7000L
+#define KAITAI_STRUCT_VERSION 9000L
 
 #include <istream>
 #include <sstream>
@@ -230,6 +230,22 @@ public:
      * the need of local variables at the caller.
      */
     static std::string reverse(std::string val);
+
+    /**
+     * Finds the minimal byte in a byte array, treating bytes as
+     * unsigned values.
+     * @param val byte array to scan
+     * @return minimal byte in byte array as integer
+     */
+    static uint8_t byte_array_min(const std::string val);
+
+    /**
+     * Finds the maximal byte in a byte array, treating bytes as
+     * unsigned values.
+     * @param val byte array to scan
+     * @return maximal byte in byte array as integer
+     */
+    static uint8_t byte_array_max(const std::string val);
 
 private:
     std::istream* m_io;
