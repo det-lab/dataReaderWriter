@@ -1,3 +1,6 @@
-## Modeling Physics Data
+# Modeling Physics Data
 
+### SCDMS and Midas Data
 The `ksy/scdms.ksy` and `ksy/midas.ksy` files are an example of how to declare a more complicated custom binary format. These demonstrate a number of the capabilities of Kaitai Struct including the ability to parse packed integer values, enumerated values, and conditional statements. Additionally it demonstrates the ability to import formats described in other files since the actual data is contained in the `scdms.ksy` format which is then encapsulated within the `midas.ksy` structure.
+
+### 

@@ -10,13 +10,17 @@ This repository seeks to demonstrate and evaluate the use of existing tools to d
 
 ### Kaitai Struct
 
-Kaitai uses a yaml-style format to declare a binary format. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. See the `kaitai/` folder for more information.
+Kaitai uses a yaml-style format to declare a binary format. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. 
 
-[Documentation is here](kaitai/simple.balbhalfha;g)
-Note: If trying to hand-write code to interface with toy data, may experience funkiness with species names (in particular, additional characters being rendered with "cat"). 
+[Click here](kaitai/simple_sample/README.md) for more information and a usage example on Kaitai Struct.
 
-TO DO: update documentation. 
+Note: If trying to hand-write code to interface with toy data, you may experience some strangeness with species names (eg. additional characters being rendered with "cat").
 
 ### DFDL
 
-DFDL takes a much different approach and serves directly as a parser instead of simply generating the code that the user must then incorporate. After declaring your format, DFDL parses the raw file and produces a new XML or JSON file. This file contains all the information in the raw file but has now been structure to be easily accessible. Nearly all programming languages have some type of XML or JSON parsing library which simplifies the process of accessing the relevant data. See the `dfdl/` folder for more information.
+DFDL takes a much different approach and serves directly as a parser instead of simply generating the code that the user must then incorporate. After declaring your format, DFDL parses the raw file and produces a new XML or JSON file. This file contains all the information in the raw file but has now been structure to be easily accessible. Nearly all programming languages have some type of XML or JSON parsing library which simplifies the process of accessing the relevant data. 
+
+[Click here](dfdl/README.md) for more information and a usage example on Daffodil.
+
+### Data
+
