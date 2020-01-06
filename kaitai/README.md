@@ -1,0 +1,1 @@
+../docs/kaitai-struct.md

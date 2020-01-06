@@ -1,0 +1,1 @@
+../../docs/simple-kaitai-example.md
