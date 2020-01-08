@@ -1,7 +1,7 @@
 build/
 
-kaitai/simple_kaitai_example/bin/
-kaitai/simple_kaitai_example/src/animal.*
+kaitai/simple_example/bin/
+kaitai/simple_example/src/animal.*
 
 *.o
 *.so
