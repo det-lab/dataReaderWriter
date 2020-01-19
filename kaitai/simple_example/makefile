@@ -1,23 +1,23 @@
 .SUFFIXES : .cpp
 
-INCDIR =
+INCDIR = -Isrc/kaitai
 LIBDIR =
 
-VPATH = src:./src/kaitai bin:./bin
+VPATH = bin:./bin src:./src/kaitai 
 
 CC = g++
-CXXFLAGS = -g -std=c++11
-LIBS = # -lm	the -lm flag links to linux math library but it isn't needed in this context
+CXXFLAGS = -g -std=c++11 -DKS_STR_ENCODING_NONE
+LIBS =  
 
 OBJS = main.o animal.o kaitaistream.o
 
 TARGET = kaitaiAnimalExample
 
 $(TARGET): $(OBJS)
-		$(CC) -o $@ $(OBJS) $(LIBDIR) $(LIBS)
+		$(CC) -o $@ $(OBJS) $(LIBDIR) $(LIBS) 
 
 .cpp.o:
-		$(CC) -c $(CXXFLAGS) $(INCDIR) $<
+		$(CC) -c $(CXXFLAGS) $(INCDIR) $^
 
 clean:
 		rm -f $(OBJS) bin/$(TARGET) core
