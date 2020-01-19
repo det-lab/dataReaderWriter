@@ -22,9 +22,9 @@ However, it's worth being aware that this can very quickly become a tedious and 
 
 One code-generating option is Kaitai Struct, which uses a yaml-style format to declare a binary data format's structure. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. 
 
-Click [here](kaitai/README.md) for more information about Kaitai Struct.
+Click [here](docs/kaitai-struct.md) for more information about Kaitai Struct.
 
-Click [here](kaitai/simple_example/README.md) for an example of how to use Kaitai Struct to interface with binary data.
+Click [here](docs/kaitai-simple-example.md) for an example of how to use Kaitai Struct to interface with binary data.
 
 Note: If trying to hand-write code to interface with toy data, you may experience some strangeness with species names (eg. additional characters being rendered with "cat").
 
