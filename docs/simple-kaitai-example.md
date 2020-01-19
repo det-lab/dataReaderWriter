@@ -17,19 +17,19 @@ This directory contains files meant to demonstrate a very simplistic usage of re
 
 ### Contents
 
-* `data/animal_raw`
+* `data/animal_raw`  
   A binary data file containing entries in the format described in animal.ksy (a symlink to `<dataRW>/data/animal_raw`)
 
-* `src/`
+* `src/`  
     Folder containing the source code that you will compile to run the example.
 
-  - `main.cpp`
+  - `main.cpp`  
     A simple example of a C++ program to read and print to stdout the contents of an `animal` format file (note - this program was handwritten, and is not generated or changed by kaitai!)
 
-  - `kaitai/`
+  - `kaitai/`  
     This directory contains kaitai-struct's C++ runtime library, and was taken from [kaitai_struct_cpp_stl_runtime](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime/tree/72dd2d44b53d35b8c7b493c9000d315eb6f9ff1d). This code allows Kaitai to interface with standard C++ stream libraries **and are required** to correctly compile and execute your program. You shouldn't have to make any changes to this directory, it just needs to exist and be findable when you compile your program (for example, [makefile](makefile)) lines 3 and 6).
 
-* `makefile`
+* `makefile`  
   `make` instructions to compile the program described in `main.cpp`. Take note of how to make use of Kaitai in your own code:
   
   - line 3: this tells the compiler to link to the kaitai-struct C++ runtime library
@@ -68,11 +68,12 @@ If you don't have a hex chart handy; this entry is a 6 year old cow that weighs 
   $ kaitai-struct-compiler -t cpp_stl --outdir ./src ../ksy/animal.ksy 
   ```
 
-  Note: 
-    - The `-t` flag designates the target language (eg. c++, python, perl, etc.)
-    - The `--outdir` flag specifies the output directory for the designated code
-    - The final argument is the `.ksy` template to be used in generating the code
-    - The generated files will be automatically named as described in the `.ksy` file.
+  Note:  
+
+    - The `-t` flag designates the target language (eg. c++, python, perl, etc.)  
+    - The `--outdir` flag specifies the output directory for the designated code  
+    - The final argument is the `.ksy` template to be used in generating the code  
+    - The generated files will be automatically named as described in the `.ksy` file.  
 
 2. Now we have a way to interact with our binary data using kaitai! Let's compile our our source code and build our program:
 

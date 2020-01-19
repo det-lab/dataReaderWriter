@@ -8,20 +8,28 @@ One of the issues currently facing the physics community is the highly variable 
 
 This repository seeks to demonstrate and evaluate the use of existing tools to declaratively define the structure of binary data, in an effort to streamline user interaction with raw binary data.
 
-### Interfacing with data
+## Interfacing with data
 
-#### Kaitai Struct
+### Hand-Writing Code
 
-Kaitai uses a yaml-style format to declare a binary format. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. 
+Writing code by hand to interact with your binary data files is always one option. This is a great way to get a better feel for your data structure, and get an idea of how exactly you might be interested in interacting with it. Some simplistic example code can be found in the [handwritten](handwritten/) directory.  
 
-[Click here](kaitai/simple_sample/README.md) for more information and a usage example on Kaitai Struct.
+However, it's worth being aware that this can very quickly become a tedious and titanic effort. Luckily for us, there are ways we can make computers write the code for us!
+
+**Side note:** If you're working with hand-written code to interface with the `animal_raw` data, you may experience some weirdness with the standard output (in particular, random additional characters may be rendered along with the string "cat").
+
+### Kaitai Struct
+
+One code-generating option is Kaitai Struct, which uses a yaml-style format to declare a binary data format's structure. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. 
+
+Click [here](kaitai/README.md) for more information about Kaitai Struct.
+
+Click [here](kaitai/simple_example/README.md) for an example of how to use Kaitai Struct to interface with binary data.
 
 Note: If trying to hand-write code to interface with toy data, you may experience some strangeness with species names (eg. additional characters being rendered with "cat").
 
-#### DFDL
+### DFDL
 
 DFDL takes a much different approach and serves directly as a parser instead of simply generating the code that the user must then incorporate. After declaring your format, DFDL parses the raw file and produces a new XML or JSON file. This file contains all the information in the raw file but has now been structure to be easily accessible. Nearly all programming languages have some type of XML or JSON parsing library which simplifies the process of accessing the relevant data. 
 
 [Click here](dfdl/README.md) for more information and a usage example on Daffodil.
-
-### 
