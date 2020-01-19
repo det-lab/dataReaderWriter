@@ -12,20 +12,20 @@ Available Kaitai Struct tools include:
 
 ### Contents
 
-* `simple_example/`
+* `simple_example/`  
   A directory containing a simplified guide to using Kaitai Struct to interface with binary data. Includes pre-written example code and instructions to generate code with ksc (kaitai-struct-compiler).
 
-* `ksy/`
+* `ksy/`  
   A directory containing various sample kaitai struct descriptions
 
-  - `animal.ksy`
+  - `animal.ksy`  
   A simplified data structure with some basic information about animals (species, age, and weight). Used in the `simple_example` 
 
-  - `scdms.ksy` and `midas.ksy`
+  - `scdms.ksy` and `midas.ksy`  
   The ksy/scdms.ksy and ksy/midas.ksy files are an example of how to declare a more complicated custom binary format. These demonstrate a number of the capabilities of Kaitai Struct including the ability to parse packed integer values, enumerated values, and conditional statements. Additionally it demonstrates the ability to import formats described in other files since the actual data is contained in the scdms.ksy format which is then encapsulated within the midas.ksy structure.  
  Note: an example program for these have not yet been written, but you can find some `scdms_raw.bin` data in `<dataReaderWriter>/data`. Test your Kaitai knowledge by writing up a basic program similar to the `simple_example`!
 
-* `kaitai-stream-cpp-runtime`
+* `kaitai-stream-cpp-runtime`  
   This directory contains kaitai-struct's C++ runtime library, and was taken from [kaitai_struct_cpp_stl_runtime](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime/tree/72dd2d44b53d35b8c7b493c9000d315eb6f9ff1d). This code allows Kaitai to interface with standard C++ stream libraries **and are required** to correctly compile and execute your program (this directory is symlinked from `simple_example/src/kaitai` for reference).
 
 
