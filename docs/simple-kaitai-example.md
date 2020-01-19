@@ -1,30 +1,47 @@
 ## A Simple Kaitai Example
 
-An extremely naive example is included here to demonstrate the usage of Kaitai Struct in building a data format from scratch. It can also act as a test for your installation of the kaitai-struct-compiler and/or kaitai-struct-visualizer. The folder includes the following items:
+This directory contains files meant to demonstrate a very simplistic usage of reading custom data using Kaitai, Awkward, and C++. Examples of handwritten as well as Kaitai-generated code are included.  
 
-* `ksy/animal.ksy`
-  This is a simple .ksy file that describes a binary format. The structure is fairly contrived but it provides an easy introduction into Katai. The example describes a file that contains a sequence of entries with each representing an animal. Each animal has a species, an age, and a weight associated with it.
+* [Directory contents](#contents)
+* [Animal data format](#data-format)
+* [Instructions - Linux](#linux)
+* [Instructions - Windows (not tested)](#windows)
+
+### Dependencies
+
+- g++
+- make
+- [kaitai-struct-compiler](https://kaitai.io/#download) v 0.9
+- (Optional)[Kaitai Stream API](http://doc.kaitai.io/stream_api.html) runtime for your desired target language
+- **NOTE:** Kaitai is still in fairly early development, so getting the right versions here is important, as breaking changes in updates are likely. We'll try to keep this updated as well, but just in case...
+
+### Contents
 
 * `data/animal_raw`
-  A binary file containing entries in the format described in animal.ksy
+  A binary data file containing entries in the format described in animal.ksy (a symlink to `<dataRW>/data/animal_raw`)
 
 * `src/`
     Folder containing the source code that you will compile to run the example.
 
   - `main.cpp`
-    A simple program for reading the contents of the file and writing the data to standard output.
+    A simple example of a C++ program to read and print to stdout the contents of an `animal` format file (note - this program was handwritten, and is not generated or changed by kaitai!)
 
   - `kaitai/`
-    Folder containing C++ wrapper code (as provided by Kaitai) for interfacing with C++ stream libraries. These are needed to correctly compile and execute your program but you *shouldn't* have to make any changes.
-    
-* `setup.sh`
-  Shell script to compile source code and organize resulting files
+    This directory contains kaitai-struct's C++ runtime library, and was taken from [kaitai_struct_cpp_stl_runtime](https://github.com/kaitai-io/kaitai_struct_cpp_stl_runtime/tree/72dd2d44b53d35b8c7b493c9000d315eb6f9ff1d). This code allows Kaitai to interface with standard C++ stream libraries **and are required** to correctly compile and execute your program. You shouldn't have to make any changes to this directory, it just needs to exist and be findable when you compile your program (for example, [makefile](makefile)) lines 3 and 6).
 
-* `run.sh`
-  Shell script to run the example.
+* `makefile`
+  `make` instructions to compile the program described in `main.cpp`. Take note of how to make use of Kaitai in your own code:
+  
+  - line 3: this tells the compiler to link to the kaitai-struct C++ runtime library
+  
+  - line 6: this designates the kaitai-struct C++ runtime files as intermediate objects
+
+  - line 9: kaitai-struct [requires that](https://doc.kaitai.io/lang_cpp_stl.html#_string_encoding) `KS_STR_ENCODING_NONE` or `KS_STR_ENCODING_ICONV` be defined at compile time
+
+  - line 12: the main program, kaitai generated code, and kaitai stream must all be declared as objects for the target to successfully build
 
 
-## Data Format
+### Data Format
 
 As noted, the data file contains a animal species, age, and weight. The actual format of the binary file is slightly more complicated. The first byte of an entry contains an integer value denoting the number of letters in the species name. The next N-bytes are ascii values containing the species name. After the ascii characters, there is one byte corresponding to the age, and finally two bytes for the weight. Fields larger than one byte are written in little endian format (in this case just the weight). An example with one entry to illustrate is below:
 
@@ -37,35 +54,46 @@ If you don't have a hex chart handy; this entry is a 6 year old cow that weighs 
 
 ## Running the Example
 
-This example assumes that you have installed the Kaitai Struct Compiler and was run on Ubuntu 16.04 using the *g++* and *make* utilities. Example commands are BASH specific. It should adapt to other Linux environments with little to no modification. Instructions for compiling on Windows are included below but have not been extensively tested and are not recommended.
+### Linux 
 
 0. Move into the simple example directory:
-`$ cd <dataReaderWriter_directory>/kaitai/simple_kaitai_example`
 
-1. First, you need to generate the C++ code corresponding to the .ksy file:
-
-  ```
-  $ kaitai-struct-compiler -t cpp_stl ksy/animal.ksy -d src/
+  ```bash
+  $ cd <dataReaderWriter_directory>/kaitai/simple_example`
   ```
 
-  This command is fairly straightforward, the -t flag designates what target language to generate code for (i.e. c++), followed by the .ksy file to use to generate the code, and the `-d` flag specifies the output directory for generated code. This should generate `animal.h` and `animal.cpp` in `./src` . Now you have everything you need to easily interact with a binary file.  
-**NOTE** some versions of `kaitai-struct-compiler` have an issue with Java versions. If you receive an error that 'Java version 1.6+ is required', you can workaround it by adding the no version check flag: 
+1. First, we'll need to generate the C++ code corresponding to the .ksy file:
 
-``$ kaitai-struct-compiler -t cpp_stl -no-version-check ksy/animal.ksy``
-
-2. The next step is to compile the source code and link into your program. The `main.cpp` file provided was written in advance for the example. It simply reads the binary file and echos the contents (with some formatting for readability) to standard output. You can make changes in order to experiment, but to use as-is you simply need to execute the following commands. A makefile along with two shell scripts are provided and configured to automate the process but it can be done manually as well. From the `simple_kaitai_example/` directory:
-
-  ```
-  $ ./setup.sh
+  ```bash
+  $ kaitai-struct-compiler -t cpp_stl --outdir ./src ../ksy/animal.ksy 
   ```
 
-  The setup script executes a makefile that compiles and links the appropriate files together to create a standalone executable.
+  Note: 
+    - The `-t` flag designates the target language (eg. c++, python, perl, etc.)
+    - The `--outdir` flag specifies the output directory for the designated code
+    - The final argument is the `.ksy` template to be used in generating the code
+    - The generated files will be automatically named as described in the `.ksy` file.
 
-3. Run the resulting executable:
+2. Now we have a way to interact with our binary data using kaitai! Let's compile our our source code and build our program:
 
+  ```bash
+  $ make
   ```
-  $ ./run.sh
+
+  Recall that this `main.cpp` was pre-written as an example. Once you're convinced everything is working, you can play around with making some changes to this file, and repeating `$ make` to recompile the program and try running again. 
+
+3. Cleanup and organization:
+
+  ```bash
+  $ mkdir bin/ && mv kaitaiAnimalExample bin/ # move executable to its own spot
+  $ rm *.o # cleanup build remnants
   ```
+
+4. Run the executable:
+
+  ```bash
+  $ ./bin/kaitaiAnimalExample
+  ```  
 
   If everything worked correctly, you should get the following output:
 
@@ -81,9 +109,9 @@ This example assumes that you have installed the Kaitai Struct Compiler and was 
     Weight: 5
   ``` 
 
-## Running On Windows
+### Windows
 
-Running the example on a Windows platform will require you to manually compile and run the program. 
+Running the example on a Windows platform will require you to manually compile and run the program. The process is essentially the same. 
 
   1. Generate the source code using the Kaitai compiler as before from a command prompt:
 
