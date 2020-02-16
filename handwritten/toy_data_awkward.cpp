@@ -13,18 +13,18 @@ namespace ak = awkward;
 
 int main(int, char**){
 
-  std::ifstream rf("/home/josh/dev/dataReaderWriter/kaitai/simple_kaitai_example/data/animal_raw", std::ifstream::out | std::ifstream::binary);
+  std::ifstream rf("/home/josh/dev/awkward-kaitai/dataReaderWriter/data/animal_raw", std::ifstream::out | std::ifstream::binary);
   if(!rf){
     std::cout << "Cannot open file!" << std::endl;
     return 1;
     }
 
-  ak::FillableArray animals(ak::FillableOptions(1024, 2.0));
+  ak::FillableArray animal(ak::FillableOptions(1024, 2.0));
 
   while (rf.peek() != EOF){
   
     // start record for i-th animal
-    animals.beginrecord();
+    animal.beginrecord();
 
     // get length of species name
     char species_len;
@@ -35,29 +35,29 @@ int main(int, char**){
     char name[(int)species_len];
     rf.read(&name[0], (int)species_len);
     assert(!rf.eof());
-    animals.field_check("Name");
-    animals.string(name);
+    animal.field_check("Name");
+    animal.string(name);
   
     // get age
     char age_char;
     rf.read(&age_char,1);
     assert(!rf.eof());
-    animals.field_check("Age");
-    animals.integer((int)age_char);
+    animal.field_check("Age");
+    animal.integer((int)age_char);
 
     // get weight
     char weight_char[2];
     rf.read(&weight_char[0],2);
     assert(!rf.eof());
-    animals.field_check("Weight");
-    animals.integer((int)  weight_char[0]+(100*weight_char[1]));
+    animal.field_check("Weight");
+    animal.integer((int)  weight_char[0]+(100*weight_char[1]));
 
     // end record for i-th animal
-    animals.endrecord();
+    animal.endrecord();
   }
   
   // snapshot the FillableArray
-  std::shared_ptr<ak::Content> array = animals.snapshot();
+  std::shared_ptr<ak::Content> array = animal.snapshot();
   std::cout << array.get()-> tojson(false,1);
 
   return 0;
