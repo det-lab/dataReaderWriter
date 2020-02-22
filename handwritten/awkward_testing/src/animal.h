@@ -1,8 +1,6 @@
 #ifndef ANIMAL_H_
 #define ANIMAL_H_
 
-// This is a generated file! Please edit source .ksy file and use kaitai-struct-compiler to rebuild
-
 #include "kaitai/kaitaistruct.h"
 #include <stdint.h>
 #include <vector>
@@ -13,8 +11,8 @@
 
 namespace ak = awkward;
 
-#if KAITAI_STRUCT_VERSION < 9000L
-#error "Incompatible Kaitai Struct C++/STL API: version 0.9 or later is required"
+#if KAITAI_STRUCT_VERSION < 7000L
+#error "Incompatible Kaitai Struct C++/STL API: version 0.7 or later is required"
 #endif
 
 class animal_t : public kaitai::kstruct {
