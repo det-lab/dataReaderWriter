@@ -7,12 +7,6 @@
 #include <stdint.h>
 #include <vector>
 
-#include "awkward/Slice.h"
-#include "awkward/fillable/FillableArray.h"
-#include "awkward/fillable/FillableOptions.h"
-
-namespace ak = awkward;
-
 #if KAITAI_STRUCT_VERSION < 9000L
 #error "Incompatible Kaitai Struct C++/STL API: version 0.9 or later is required"
 #endif
@@ -60,12 +54,12 @@ public:
     };
 
 private:
-    ak::FillableArray m_entry;
+    std::vector<animal_entry_t*>* m_entry;
     animal_t* m__root;
     kaitai::kstruct* m__parent;
 
 public:
-    ak::FillableArray entry() const { return m_entry; }
+    std::vector<animal_entry_t*>* entry() const { return m_entry; }
     animal_t* _root() const { return m__root; }
     kaitai::kstruct* _parent() const { return m__parent; }
 };
