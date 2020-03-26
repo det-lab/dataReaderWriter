@@ -6,8 +6,8 @@
 #include <vector>
 
 #include "awkward/Slice.h"
-#include "awkward/fillable/FillableArray.h"
-#include "awkward/fillable/FillableOptions.h"
+#include "awkward/builder/ArrayBuilder.h"
+#include "awkward/builder/ArrayBuilderOptions.h"
 
 namespace ak = awkward;
 
@@ -58,12 +58,12 @@ public:
     };
 
 private:
-    ak::FillableArray m_entry;
+    ak::ArrayBuilder m_entry;
     animal_t* m__root;
     kaitai::kstruct* m__parent;
 
 public:
-    ak::FillableArray entry() const { return m_entry; }
+    ak::ArrayBuilder entry() const { return m_entry; }
     animal_t* _root() const { return m__root; }
     kaitai::kstruct* _parent() const { return m__parent; }
 };
