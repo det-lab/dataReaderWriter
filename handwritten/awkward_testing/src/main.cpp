@@ -19,7 +19,7 @@ int main() {
   animal_t zoo = animal_t(&ks);
 
   /* Get a pointer to the vector containing all the animals */
-  ak::FillableArray animal_vec = zoo.entry();
+  ak::ArrayBuilder animal_vec = zoo.entry();
   //vector<animal_t::animal_entry_t*> *animal_vec = zoo.entry();
 
   // take a snapshot

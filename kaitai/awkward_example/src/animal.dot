@@ -1,0 +1,52 @@
+#include "kaitai/kaitaistruct.h"
+#include <stdint.h>
+#include "awkward/Slice.h"
+#include "awkward/builder/ArrayBuilder.h"
+#include "awkward/builder/ArrayBuilderOptions.h"
+
+namespace ak = awkward;
+
+// current table: animal__seq
+	animalbeginrecord();
+
+	animal_entry_t* data = m__io.read_AnimalEntry();
+	animal.field_check(entry);
+	animal.string(data);
+	pos.getOrElse = 0
+	sizeStr = ...
+	dataTypeStr = AnimalEntry
+	<TR><TD COLSPAN="4" PORT="entry__repeat">repeat to end of stream</TD></TR>
+animal.endrecord();
+// current table: animal_entry__seq
+	animalbeginrecord();
+
+	uint8_t data = m__io.read_u1();
+	animal.field_check(str_len);
+	animal.string(data);
+	pos.getOrElse = 0
+	sizeStr = 1
+	dataTypeStr = u1
+	std::string data = m__io.read_str(UTF-8)();
+	animal.field_check(species);
+	animal.string(data);
+	pos.getOrElse = 1
+	sizeStr = str_len
+	dataTypeStr = str(UTF-8)
+	uint8_t data = m__io.read_u1();
+	animal.field_check(age);
+	animal.string(data);
+	pos.getOrElse = ...
+	sizeStr = 1
+	dataTypeStr = u1
+	uint16_t data = m__io.read_u2le();
+	animal.field_check(weight);
+	animal.string(data);
+	pos.getOrElse = ...
+	sizeStr = 2
+	dataTypeStr = u2le
+animal.endrecord();
+}
+}
+animal__seq:entry_type -> animal_entry__seq [style=bold];
+animal_entry__seq:str_len_type -> animal_entry__seq:species_size [color="#404040"];
+}

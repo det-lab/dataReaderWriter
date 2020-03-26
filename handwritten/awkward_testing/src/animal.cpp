@@ -6,40 +6,25 @@
 
 namespace ak = awkward;
 
-animal_t::animal_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, animal_t* p__root) : kaitai::kstruct(p__io), m_entry(ak::FillableOptions(1024, 2.0)) {
+animal_t::animal_t(kaitai::kstream* p__io, kaitai::kstruct* p__parent, animal_t* p__root) : kaitai::kstruct(p__io),  m_entry(ak::ArrayBuilderOptions(1024, 2.0)) {
     m__parent = p__parent;
     m__root = this;
-    //m_entry = 0;
     _read();
 }
 
 void animal_t::_read() {
-    //ak::FillableArray m_entry(ak::FillableOptions(1024, 2.0));
-    {
-        int i = 0;
-        while (!m__io->is_eof()) {
-            animal_entry_t this_animal = animal_entry_t(m__io, this, m__root);
-           
-            // start record for i-th animal
-            m_entry.beginrecord();
-
-            // record species name
-            m_entry.field_check("Name");
-            m_entry.string(this_animal.species());
-
-            // record age
-            m_entry.field_check("Age");
-            m_entry.integer(this_animal.age());
-        
-            // record weight
-            m_entry.field_check("Weight");
-            m_entry.integer(this_animal.weight());
-        
-            // end record for i-th animal
-            m_entry.endrecord();
-
-            i++;
-        }
+    int i = 0;
+    while (!m__io->is_eof()) {
+        animal_entry_t this_one = animal_entry_t(m__io, this, m__root);
+        m_entry.beginrecord();
+        m_entry.field_check("Name");
+        m_entry.string(this_one.species());
+        m_entry.field_check("Age");
+        m_entry.integer(this_one.age());
+        m_entry.field_check("Weight");
+        m_entry.integer(this_one.weight());
+        m_entry.endrecord();
+        i++;
     }
 }
 

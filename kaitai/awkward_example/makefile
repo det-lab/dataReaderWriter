@@ -7,7 +7,7 @@ VPATH = bin:./bin src:./src/kaitai
 
 CC = g++
 CXXFLAGS = -g -std=c++11 -DKS_STR_ENCODING_NONE
-LIBS = -lawkward -lawkward-cpu-kernels
+LIBS = -lawkward-static -lawkward-cpu-kernels-static
 
 OBJS = main.o animal.o kaitaistream.o
 
