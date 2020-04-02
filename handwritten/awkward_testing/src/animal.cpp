@@ -11,6 +11,7 @@
 using namespace std;
 namespace ak = awkward;
 
+// Data type: animal
 ak::ArrayBuilder _read(kaitai::kstream* ks) {
 
 	// initialize array for animal seq
@@ -18,25 +19,19 @@ ak::ArrayBuilder _read(kaitai::kstream* ks) {
 
 	while(!ks->is_eof()) {
 		animals.beginrecord();
-		// animal
-		
-		currently on entry
-		animal_entry_t* entry = ks->read_AnimalEntry();
-		
-		// animal_entry
-		
-		currently on str_len
+		// Read commands for sequence: animal_entry
+		// currently on str_len
 		uint8_t str_len = ks->read_u1();
-		
-		currently on species
+
+		// currently on species
 		std::string species = ks->read_str(UTF-8)();
-		
-		currently on age
+
+		// currently on age
 		uint8_t age = ks->read_u1();
-		
-		currently on weight
+
+		// currently on weight
 		uint16_t weight = ks->read_u2le();
-		
+
 	}
 }
 }
