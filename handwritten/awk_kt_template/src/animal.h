@@ -3,4 +3,4 @@
 
 namespace ak = awkward;
 
-ak::ArrayBuilder _read(kaitai::kstream* ks);
+ak::ArrayBuilder read_animal(kaitai::kstream* ks);
