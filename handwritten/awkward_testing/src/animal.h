@@ -1,5 +1,5 @@
 #include "kaitai/kaitaistruct.h"
-#include "awkward/builder/ArrayBuilder.h"
+#include "awkward/builder/ArrayBuilderOptions.h"
 
 namespace ak = awkward;
 

@@ -1,6 +1,6 @@
-#include <iostream> // std::cout
-#include <fstream>  // std::ifstream
-#include <string>   // duh
+#include <iostream>
+#include <fstream>
+#include <string>
 
 #include "kaitai/kaitaistruct.h"
 
@@ -13,41 +13,30 @@ namespace ak = awkward;
 
 ak::ArrayBuilder _read(kaitai::kstream* ks) {
 
-  //init array
-  ak::ArrayBuilder animals(ak::ArrayBuilderOptions(1024, 2.0));
+	// initialize array for animal seq
+	ak::ArrayBuilder animals(ak::ArrayBuilderOptions(1024, 2.0));
 
-  //read loop 
-  while(!ks->is_eof()) {
-
-    // start record for i-th animals
-    animals.beginrecord();
-
-    // get length of species name
-    uint8_t str_len = ks->read_u1();
-    //assert(!rf.eof());
-
-    // get species name
-    std::string species = kaitai::kstream::bytes_to_str(ks->read_bytes(str_len), std::string("UTF-8"));
-    //ks->read_(&name[0], (int)species_len);
-    //assert(!rf.eof());
-    animals.field_check("species");
-    animals.string(species);
-  
-    // get age
-    uint8_t age = ks->read_u1();
-    //assert(!rf.eof());
-    animals.field_check("age");
-    animals.integer(age);
-
-    // get weight
-    uint16_t weight = ks->read_u2le();
-    //assert(!rf.eof());
-    animals.field_check("weight");
-    animals.integer(weight);
-
-    // end record for i-th animals
-    animals.endrecord();
-  }
-
-  return animals;
+	while(!ks->is_eof()) {
+		animals.beginrecord();
+		// animal
+		
+		currently on entry
+		animal_entry_t* entry = ks->read_AnimalEntry();
+		
+		// animal_entry
+		
+		currently on str_len
+		uint8_t str_len = ks->read_u1();
+		
+		currently on species
+		std::string species = ks->read_str(UTF-8)();
+		
+		currently on age
+		uint8_t age = ks->read_u1();
+		
+		currently on weight
+		uint16_t weight = ks->read_u2le();
+		
+	}
+}
 }

@@ -1,0 +1,28 @@
+digraph {
+	rankdir=LR;
+	node [shape=plaintext];
+	subgraph cluster__animal {
+		label="Animal";
+		graph[style=dotted];
+
+		animal__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+			<TR><TD PORT="entry_pos">0</TD><TD PORT="entry_size">...</TD><TD>AnimalEntry</TD><TD PORT="entry_type">entry</TD></TR>
+			<TR><TD COLSPAN="4" PORT="entry__repeat">repeat to end of stream</TD></TR>
+		</TABLE>>];
+		subgraph cluster__animal_entry {
+			label="Animal::AnimalEntry";
+			graph[style=dotted];
+
+			animal_entry__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="str_len_pos">0</TD><TD PORT="str_len_size">1</TD><TD>u1</TD><TD PORT="str_len_type">str_len</TD></TR>
+				<TR><TD PORT="species_pos">1</TD><TD PORT="species_size">str_len</TD><TD>str(UTF-8)</TD><TD PORT="species_type">species</TD></TR>
+				<TR><TD PORT="age_pos">...</TD><TD PORT="age_size">1</TD><TD>u1</TD><TD PORT="age_type">age</TD></TR>
+				<TR><TD PORT="weight_pos">...</TD><TD PORT="weight_size">2</TD><TD>u2le</TD><TD PORT="weight_type">weight</TD></TR>
+			</TABLE>>];
+		}
+	}
+	animal__seq:entry_type -> animal_entry__seq [style=bold];
+	animal_entry__seq:str_len_type -> animal_entry__seq:species_size [color="#404040"];
+}

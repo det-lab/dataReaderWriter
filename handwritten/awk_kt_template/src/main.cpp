@@ -19,8 +19,8 @@ int main() {
 
   cout << "kaitai stream check" << endl;
 
-  /* Get a pointer to the vector containing all the animals */
-  ak::ArrayBuilder animal_array = _read(&ks);
+  /* Get a pointer to the array containing all the animals */
+  ak::ArrayBuilder animal_array = read_animal(&ks);
 
   cout << "awkward array check" << endl;
 
