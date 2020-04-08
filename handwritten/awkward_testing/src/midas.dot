@@ -1,0 +1,116 @@
+digraph {
+	rankdir=LR;
+	node [shape=plaintext];
+	subgraph cluster__midas {
+		label="Midas";
+		graph[style=dotted];
+
+		midas__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+			<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+			<TR><TD PORT="n_events_pos">0</TD><TD PORT="n_events_size">...</TD><TD>Event</TD><TD PORT="n_events_type">n_events</TD></TR>
+			<TR><TD COLSPAN="4" PORT="n_events__repeat">repeat to end of stream</TD></TR>
+		</TABLE>>];
+		subgraph cluster__event_data {
+			label="Midas::EventData";
+			graph[style=dotted];
+
+			event_data__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="bank_header_pos">0</TD><TD PORT="bank_header_size">8</TD><TD>BankHdr</TD><TD PORT="bank_header_type">bank_header</TD></TR>
+				<TR><TD PORT="bank_pos">8</TD><TD PORT="bank_size">...</TD><TD>switch ((bank_header.flags &amp; (1 &lt;&lt; 4)))</TD><TD PORT="bank_type">bank</TD></TR>
+			</TABLE>>];
+event_data__seq_bank_switch [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+	<TR><TD BGCOLOR="#F0F2E4">case</TD><TD BGCOLOR="#F0F2E4">type</TD></TR>
+	<TR><TD>0</TD><TD PORT="case0">Bank16</TD></TR>
+	<TR><TD>_</TD><TD PORT="case1">Bank32</TD></TR>
+</TABLE>>];
+		}
+		subgraph cluster__event {
+			label="Midas::Event";
+			graph[style=dotted];
+
+			event__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="event_header_pos">0</TD><TD PORT="event_header_size">16</TD><TD>EventHdr</TD><TD PORT="event_header_type">event_header</TD></TR>
+				<TR><TD PORT="data_block_pos">16</TD><TD PORT="data_block_size">...</TD><TD>switch (event_header.event_id)</TD><TD PORT="data_block_type">data_block</TD></TR>
+			</TABLE>>];
+event__seq_data_block_switch [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+	<TR><TD BGCOLOR="#F0F2E4">case</TD><TD BGCOLOR="#F0F2E4">type</TD></TR>
+	<TR><TD>32768</TD><TD PORT="case0">OdbDump</TD></TR>
+	<TR><TD>32769</TD><TD PORT="case1">OdbDump</TD></TR>
+	<TR><TD>_</TD><TD PORT="case2">EventData</TD></TR>
+</TABLE>>];
+		}
+		subgraph cluster__odb_dump {
+			label="Midas::OdbDump";
+			graph[style=dotted];
+
+			odb_dump__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="odb_pos">0</TD><TD PORT="odb_size">_parent.event_header.evt_data_size</TD><TD></TD><TD PORT="odb_type">odb</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__bank16 {
+			label="Midas::Bank16";
+			graph[style=dotted];
+
+			bank16__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="name_pos">0</TD><TD PORT="name_size">4</TD><TD>str(UTF-8)</TD><TD PORT="name_type">name</TD></TR>
+				<TR><TD PORT="type_pos">4</TD><TD PORT="type_size">2</TD><TD>u2le</TD><TD PORT="type_type">type</TD></TR>
+				<TR><TD PORT="size_pos">6</TD><TD PORT="size_size">2</TD><TD>u2le</TD><TD PORT="size_type">size</TD></TR>
+				<TR><TD PORT="data_pos">8</TD><TD PORT="data_size">...</TD><TD>Scdms</TD><TD PORT="data_type">data</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__bank_hdr {
+			label="Midas::BankHdr";
+			graph[style=dotted];
+
+			bank_hdr__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="all_bank_size_pos">0</TD><TD PORT="all_bank_size_size">4</TD><TD>u4le</TD><TD PORT="all_bank_size_type">all_bank_size</TD></TR>
+				<TR><TD PORT="flags_pos">4</TD><TD PORT="flags_size">4</TD><TD>u4le</TD><TD PORT="flags_type">flags</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__event_hdr {
+			label="Midas::EventHdr";
+			graph[style=dotted];
+
+			event_hdr__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="event_id_pos">0</TD><TD PORT="event_id_size">2</TD><TD>u2le</TD><TD PORT="event_id_type">event_id</TD></TR>
+				<TR><TD PORT="trigger_mask_pos">2</TD><TD PORT="trigger_mask_size">2</TD><TD>u2le</TD><TD PORT="trigger_mask_type">trigger_mask</TD></TR>
+				<TR><TD PORT="serial_number_pos">4</TD><TD PORT="serial_number_size">4</TD><TD>u4le</TD><TD PORT="serial_number_type">serial_number</TD></TR>
+				<TR><TD PORT="time_stamp_pos">8</TD><TD PORT="time_stamp_size">4</TD><TD>u4le</TD><TD PORT="time_stamp_type">time_stamp</TD></TR>
+				<TR><TD PORT="evt_data_size_pos">12</TD><TD PORT="evt_data_size_size">4</TD><TD>u4le</TD><TD PORT="evt_data_size_type">evt_data_size</TD></TR>
+			</TABLE>>];
+		}
+		subgraph cluster__bank32 {
+			label="Midas::Bank32";
+			graph[style=dotted];
+
+			bank32__seq [label=<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+				<TR><TD BGCOLOR="#E0FFE0">pos</TD><TD BGCOLOR="#E0FFE0">size</TD><TD BGCOLOR="#E0FFE0">type</TD><TD BGCOLOR="#E0FFE0">id</TD></TR>
+				<TR><TD PORT="name_pos">0</TD><TD PORT="name_size">4</TD><TD>str(UTF-8)</TD><TD PORT="name_type">name</TD></TR>
+				<TR><TD PORT="type_pos">4</TD><TD PORT="type_size">4</TD><TD>u4le</TD><TD PORT="type_type">type</TD></TR>
+				<TR><TD PORT="size_pos">8</TD><TD PORT="size_size">4</TD><TD>u4le</TD><TD PORT="size_type">size</TD></TR>
+				<TR><TD PORT="data_pos">12</TD><TD PORT="data_size">...</TD><TD>Scdms</TD><TD PORT="data_type">data</TD></TR>
+			</TABLE>>];
+		}
+	}
+	midas__seq:n_events_type -> event__seq [style=bold];
+	event_data__seq:bank_header_type -> bank_hdr__seq [style=bold];
+	event_data__seq:bank_type -> event_data__seq_bank_switch [style=bold];
+	event_data__seq_bank_switch:case0 -> bank16__seq [style=bold];
+	event_data__seq_bank_switch:case1 -> bank32__seq [style=bold];
+	bank_hdr__seq:flags_type -> event_data__seq:bank_type [color="#404040"];
+	event__seq:event_header_type -> event_hdr__seq [style=bold];
+	event__seq:data_block_type -> event__seq_data_block_switch [style=bold];
+	event__seq_data_block_switch:case0 -> odb_dump__seq [style=bold];
+	event__seq_data_block_switch:case1 -> odb_dump__seq [style=bold];
+	event__seq_data_block_switch:case2 -> event_data__seq [style=bold];
+	event_hdr__seq:event_id_type -> event__seq:data_block_type [color="#404040"];
+	event_hdr__seq:evt_data_size_type -> odb_dump__seq:odb_size [color="#404040"];
+	bank16__seq:data_type -> scdms__seq [style=bold];
+	bank32__seq:data_type -> scdms__seq [style=bold];
+}
