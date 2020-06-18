@@ -28,6 +28,20 @@ Click [here](kaitai/simple-example) for an example of how to use Kaitai Struct t
 
 Note: If trying to hand-write code to interface with toy data, you may experience some strangeness with species names (eg. additional characters being rendered with "cat").
 
+Example FISH function to build `kaitai-struct-compiler` from source:
+```
+# rebuild kaitai-struct-compiler
+function build-ksc
+  cd ~/dev/awkward-kaitai/kaitai_struct_compiler
+  if sbt compilerJVM/debian:packageBin
+    pls dpkg -i ~/dev/awkward-kaitai/kaitai_struct_compiler/jvm/target/kaitai-struct-compiler_0.9-SNAPSHOT_all.deb
+  else
+    echo 'ksc failed to compile!'
+  end
+  cd -
+end
+```
+
 ### DFDL
 
 DFDL takes a much different approach and serves directly as a parser instead of simply generating the code that the user must then incorporate. After declaring your format, DFDL parses the raw file and produces a new XML or JSON file. This file contains all the information in the raw file but has now been structure to be easily accessible. Nearly all programming languages have some type of XML or JSON parsing library which simplifies the process of accessing the relevant data. 
