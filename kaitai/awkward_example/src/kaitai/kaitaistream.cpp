@@ -1,4 +1,4 @@
-#include "kaitaistream.h"
+#include <kaitai/kaitaistream.h>
 
 #if defined(__APPLE__)
 #include <machine/endian.h>
@@ -298,7 +298,7 @@ void kaitai::kstream::align_to_byte() {
     m_bits = 0;
 }
 
-uint64_t kaitai::kstream::read_bits_int(int n) {
+uint64_t kaitai::kstream::read_bits_int_be(int n) {
     int bits_needed = n - m_bits_left;
     if (bits_needed > 0) {
         // 1 bit  => 1 byte
@@ -328,6 +328,40 @@ uint64_t kaitai::kstream::read_bits_int(int n) {
     m_bits_left -= n;
     mask = get_mask_ones(m_bits_left);
     m_bits &= mask;
+
+    return res;
+}
+
+// Deprecated, use read_bits_int_be() instead.
+uint64_t kaitai::kstream::read_bits_int(int n) {
+    return read_bits_int_be(n);
+}
+
+uint64_t kaitai::kstream::read_bits_int_le(int n) {
+    int bits_needed = n - m_bits_left;
+    if (bits_needed > 0) {
+        // 1 bit  => 1 byte
+        // 8 bits => 1 byte
+        // 9 bits => 2 bytes
+        int bytes_needed = ((bits_needed - 1) / 8) + 1;
+        if (bytes_needed > 8)
+            throw std::runtime_error("read_bits_int_le: more than 8 bytes requested");
+        char buf[8];
+        m_io->read(buf, bytes_needed);
+        for (int i = 0; i < bytes_needed; i++) {
+            uint8_t b = buf[i];
+            m_bits |= (static_cast<uint64_t>(b) << m_bits_left);
+            m_bits_left += 8;
+        }
+    }
+
+    // raw mask with required number of 1s, starting from lowest bit
+    uint64_t mask = get_mask_ones(n);
+    // derive reading result
+    uint64_t res = m_bits & mask;
+    // remove bottom bits that we've just read by shifting
+    m_bits >>= n;
+    m_bits_left -= n;
 
     return res;
 }
