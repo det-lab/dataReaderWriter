@@ -1,9 +1,8 @@
-build/
-
 kaitai/simple_example/bin/
 kaitai/simple_example/src/animal.*
 
-kaitai/awkward_example/bin/
+kaitai/awkward_example/bin/*
+kaitai/awkward_example/build/*
 
 *.o
 *.so
