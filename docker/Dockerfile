@@ -2,24 +2,19 @@ FROM ubuntu:latest
 USER root
 
 ARG APT_KEY_DONT_WARN_ON_DANGEROUS_USAGE=1
+ENV TZ=America/Denver
 
-RUN apt update -y && apt upgrade -y && \
-    apt install -y  git gnupg make g++
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && \
+    echo $TZ > /etc/timezone && \
+    apt update -y && apt upgrade -y && \
+    apt install -y git sudo gnupg cmake wget gcc g++ && \
+    echo "Set disable_coredump false" >> /etc/sudo.conf
 
-RUN mkdir ~/.gnupg && echo "disable-ipv6" >> ~/.gnupg/dirmngr.conf
+RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh -O /opt/anaconda.sh && /bin/bash /opt/anaconda.sh -b -p /opt/anaconda3
 
-# add repository for kaitai-struct-compiler (unstable) 
-RUN apt-key adv --keyserver hkp://pool.sks-keyservers.net --recv 379CE192D401AB61 && \
-    echo "deb https://dl.bintray.com/kaitai-io/debian_unstable jessie main" | tee /etc/apt/sources.list.d/kaitai.list
+RUN . /opt/anaconda3/etc/profile.d/conda.sh && conda activate base && \
+    git clone --recursive https://github.com/scikit-hep/awkward-1.0.git /opt/awkward-1.0 && cd /opt/awkward-1.0 && python setup.py install --user
 
-RUN apt update -y && apt install -y kaitai-struct-compiler
-
-RUN git clone https://github.com/det-lab/dataReaderWriter.git
-RUN cd dataReaderWriter && \
-    git checkout develop && \
-    cd kaitai/simple_example && \
-    kaitai-struct-compiler -t cpp_stl ../ksy/animal.ksy && \
-    mv animal.* src/ && \
-    make -f makefile && \ 
-    mkdir bin && mv kaitaiAnimalExample bin/ && \
-    rm *.o  
+RUN cd ~ && \
+    git clone https://github.com/det-lab/dataReaderWriter.git && \
+    echo "source /opt/anaconda3/etc/profile.d/conda.sh && conda activate base" > /root/.bashrc 
