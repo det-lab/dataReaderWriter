@@ -76,21 +76,19 @@ test building executable with ksc generated code
 - g++ -I/opt/awkward-1.0/include -L/opt/awkward-1.0/build/lib.linux-x86_64-3.7/awkward1 ../src/main.cpp -lawkward-static -lawkward-cpu-kernels-static -o kaitaiAnimalReader
 
 
-
-
-
-
-
-
 #### TODO
 
+Awkward: 
+- Link libraries in program compilation
+
+KSC:
 - need to variablize:
 
 l 215      -   m_entry
 l 573      -   animal_entry_t, m__io, this, m__root
 l 574-581  -   age, name, weight, etc.
 
-- KSC - where parse KSY file?
+- how to parse KSY file?
 
 - open Kaitai issue
 	- Separate class constructors (maybe?)
