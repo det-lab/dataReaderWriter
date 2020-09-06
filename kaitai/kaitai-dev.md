@@ -20,6 +20,8 @@ $ echo "Set disable_coredump false" >> /etc/sudo.conf
 
 	b. ```git clone https://github.com/scikit-hep/awkward-1.0.git && python setup.py install --user```
 
+### KAITAI-STRUCT-COMPILER ONLY (SKIP TO "COMPILE CODE" STEP IF NOT COMPILING KSC)
+
 1. COMPILE KAITAI STRUCT COMPILER
 
     a. add sbt repository:
@@ -65,6 +67,8 @@ $ echo "Set disable_coredump false" >> /etc/sudo.conf
     ```
     
     c. Check generated files: `src/animal.cpp` and `src/animal.h`
+
+### COMPILE AGAINST KAITAI GENERATED (OR REFERENCE) CODE
 
 1. Compile code using generated files
 
