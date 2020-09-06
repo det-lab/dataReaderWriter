@@ -8,12 +8,17 @@ Run container:
 ```
 $ docker run --rm -it ubuntu
 ```
-Initial container setup:
+1. Initial container setup:
 ```
 $ apt update -y && apt upgrade -y
 $ apt install -y git sudo gnupg cmake 
 $ echo "Set disable_coredump false" >> /etc/sudo.conf
 ```
+1. Install Awkward and some depends:
+
+	a. anaconda and cmake
+
+	b. ```git clone https://github.com/scikit-hep/awkward-1.0.git && python setup.py install --user```
 
 1. COMPILE KAITAI STRUCT COMPILER
 
@@ -34,19 +39,19 @@ $ echo "Set disable_coredump false" >> /etc/sudo.conf
     sbt test
     ```
 
-2. Clone kaitai-struct-compiler
+1. Clone kaitai-struct-compiler
     ```
     git clone -b awkward --recursive https://github.com/det-lab/kaitai_struct_compiler.git
     ```
 	
-3. Build kaitai-struct-compiler 
+1. Build kaitai-struct-compiler 
     ```
     $ cd kaitai_struct_compiler
     $ sbt compilerJVM/debian:packageBin
     $ sudo dpkg -i jvm/target/kaitai-struct-compiler_0.9-SNAPSHOT_all.deb
     ```
 
-4. Generate data-reading code
+1. Generate data-reading code
 
     a. Clone data repo
     ```
@@ -61,17 +66,19 @@ $ echo "Set disable_coredump false" >> /etc/sudo.conf
     
     c. Check generated files: `src/animal.cpp` and `src/animal.h`
 
-5. TEST 
+1. Compile code using generated files
+
+	a. Move into `awkward_example` directory
+	```
+	$ cd .../dataReaderWriter/kaitai/awkward_example
+	```
+
+	b. cmake
+	```
+	cmake -S. -Bbuild/ 
+	```
 
 *-----------------------------------------------------------------------------------*
-
-more initial setup for awkward 
-- install anaconda and cmake
-- clone awkward-1.0
-	- python setup.py install --user
-
-test building executable with ksc generated code
-- cd dataReaderWriter/kaitai/awkward_example/src
 
 - g++ -I/opt/awkward-1.0/include -L/opt/awkward-1.0/build/lib.linux-x86_64-3.7/awkward1 ../src/main.cpp -lawkward-static -lawkward-cpu-kernels-static -o kaitaiAnimalReader
 
