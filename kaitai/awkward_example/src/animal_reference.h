@@ -1,4 +1,4 @@
-#include "kaitai/kaitaistruct.h"
+#include <kaitai/kaitaistruct.h>
 
 #include "awkward/builder/ArrayBuilder.h"
 

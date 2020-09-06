@@ -4,7 +4,7 @@
 
 #include "kaitai/kaitaistruct.h"
 
-#include "awkward/Slice.h"
+//#include "awkward/Slice.h"
 #include "awkward/builder/ArrayBuilder.h"
 #include "awkward/builder/ArrayBuilderOptions.h"
 
