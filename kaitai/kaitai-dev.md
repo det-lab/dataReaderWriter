@@ -9,16 +9,21 @@ Run container:
 $ docker run --rm -it ubuntu
 ```
 1. Initial container setup:
-```
-$ apt update -y && apt upgrade -y
-$ apt install -y git sudo gnupg cmake 
-$ echo "Set disable_coredump false" >> /etc/sudo.conf
-```
-1. Install Awkward and some depends:
+	
+	a. make usable
+	```
+	$ apt update -y && apt upgrade -y
+	$ apt install -y git sudo gnupg cmake wget gcc g++
+	$ echo "Set disable_coredump false" >> /etc/sudo.conf
+	```
 
-	a. anaconda and cmake
+	a. Install anaconda and cmake
+	```
+	$ wget --quiet https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh -O /opt/anaconda.sh && /bin/bash /opt/anaconda.sh -b -p /opt/anaconda3
+	$ 
+	```
 
-	b. ```git clone https://github.com/scikit-hep/awkward-1.0.git && python setup.py install --user```
+	b. ```git clone --recursive https://github.com/scikit-hep/awkward-1.0.git && python setup.py install --user```
 
 ### KAITAI-STRUCT-COMPILER ONLY (SKIP TO "COMPILE CODE" STEP IF NOT COMPILING KSC)
 
@@ -72,12 +77,17 @@ $ echo "Set disable_coredump false" >> /etc/sudo.conf
 
 1. Compile code using generated files
 
-	a. Move into `awkward_example` directory
+	a1. Clone data repo (if not already present from previous step)
+    ```
+    $ git clone https://github.com/det-lab/dataReaderWriter.git
+    ```
+
+	a2. Move into `awkward_example` directory
 	```
 	$ cd .../dataReaderWriter/kaitai/awkward_example
 	```
 
-	b. cmake
+	b. Run cmake
 	```
 	cmake -S. -Bbuild/ 
 	```
