@@ -17,13 +17,16 @@ $ docker run --rm -it ubuntu
 	$ echo "Set disable_coredump false" >> /etc/sudo.conf
 	```
 
-	a. Install anaconda and cmake
+	a. Install anaconda
 	```
 	$ wget --quiet https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_64.sh -O /opt/anaconda.sh && /bin/bash /opt/anaconda.sh -b -p /opt/anaconda3
+    $ echo "/opt/anaconda3/etc/profile.d/conda.sh" >> /home/.bashrc
+    $ echo "conda activate base" >> /home/.bashrc
+    $ . ~/.bashrc
 	$ 
 	```
 
-	b. ```git clone --recursive https://github.com/scikit-hep/awkward-1.0.git && python setup.py install --user```
+	b. ```git clone --recursive https://github.com/scikit-hep/awkward-1.0.git && cd /opt/awkward-1.0 && python setup.py install --user```
 
 ### KAITAI-STRUCT-COMPILER ONLY (SKIP TO "COMPILE CODE" STEP IF NOT COMPILING KSC)
 
