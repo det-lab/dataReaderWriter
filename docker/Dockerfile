@@ -15,7 +15,7 @@ RUN wget --quiet https://repo.anaconda.com/archive/Anaconda3-2020.02-Linux-x86_6
 RUN . /opt/anaconda3/etc/profile.d/conda.sh && conda activate base && \
     git clone --recursive https://github.com/scikit-hep/awkward-1.0.git /opt/awkward-1.0 && \ 
     cd /opt/awkward-1.0 && \
-    python setup.py install --user
+    pip install .
 
 RUN cd ~ && \
     git clone https://github.com/det-lab/dataReaderWriter.git && \

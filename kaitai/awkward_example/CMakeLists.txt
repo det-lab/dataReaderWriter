@@ -5,14 +5,17 @@ PROJECT(kaitaiAnimalReader)
 set(CMake_Misc_Dir "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMake_Misc_Dir}")
 
+execute_process(COMMAND python -m awkward1.config --incdir OUTPUT_VARIABLE AWKWARD_INCLUDE OUTPUT_STRIP_TRAILING_WHITESPACE)
+execute_process(COMMAND python -m awkward1.config --libdir OUTPUT_VARIABLE AWKWARD_LIBRARIES OUTPUT_STRIP_TRAILING_WHITESPACE)
+
 include_directories(${CMAKE_PREFIX_PATH}/include)
 
 include(Hardening)
 include(FetchContent)
 include(DownloadCLI11)
 
-find_library(CPU-KERNELS awkward-cpu-kernels HINTS ${CMAKE_PREFIX_PATH}/lib)
-find_library(LIBAWKWARD awkward HINTS ${CMAKE_PREFIX_PATH}/lib)
+find_library(CPU-KERNELS awkward-cpu-kernels REQUIRED HINTS ${AWKWARD_LIBRARIES})
+find_library(LIBAWKWARD awkward REQUIRED HINTS ${AWKWARD_LIBRARIES})
 message(STATUS "Libraries: ${LIBAWKWARD} ${CPU-KERNELS}")
 
 downloadCLI11IfNeeded("CLI11")
@@ -36,7 +39,7 @@ add_subdirectory("${kaitai_struct_cpp_runtime_DIR}")
 
 add_executable(kaitaiAnimalReader "${SRCFILES}")
 target_link_libraries(kaitaiAnimalReader kaitai_struct_cpp_stl_runtime ${CPU-KERNELS} ${LIBAWKWARD})
-target_include_directories(kaitaiAnimalReader  PUBLIC "${kaitai_struct_cpp_runtime_DIR}" "${CLI11_INCLUDE_DIR}")
+target_include_directories(kaitaiAnimalReader  PUBLIC "${kaitai_struct_cpp_runtime_DIR}" "${CLI11_INCLUDE_DIR}" "${AWKWARD_INCLUDE}")
 
 set_target_properties(kaitaiAnimalReader PROPERTIES CXX_VISIBILITY_PRESET hidden)
 #target_link_libraries(kaitaiAnimalReader PRIVATE ${CPU-KERNELS} ${LIBAWKWARD})
