@@ -21,11 +21,11 @@ Available Kaitai Struct tools include:
 
 ### Contents
 
-* [simple_example/](../kaitai/simple_example/)
+* [simple_example/](../kaitai/simple_example/)  
   A directory containing a simplified guide to using Kaitai Struct to read binary data into C++ std vectors. Includes pre-written example code as well as instructions to generate code with ksc (kaitai-struct-compiler).  
   [Working with this example](./kaitai-simple-example.md)
 
-* [awkward_example/](../kaitai/awkward_example/)
+* [awkward_example/](../kaitai/awkward_example/)  
   An example program using Kaitai to read binary data into Awkward arrays (C++/python compatible).  
   [Working with this example](./kaitai-awkward-example.md)
   
