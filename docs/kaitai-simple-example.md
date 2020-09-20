@@ -1,6 +1,7 @@
 ## A Simple Kaitai Example
 
-This directory contains files meant to demonstrate a very simplistic usage of reading custom data using Kaitai, Awkward, and C++. Examples of handwritten as well as Kaitai-generated code are included.  
+This directory contains files meant to demonstrate a very simplistic usage of reading custom data using Kaitai  and C++.  
+Examples of handwritten as well as Kaitai-generated code are included.  
 
 * [Directory contents](#contents)
 * [Animal data format](#data-format)

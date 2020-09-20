@@ -1,1 +1,1 @@
-../../docs/kaitai-simple-example.md
+../../docs/kaitai-awkward-example.md

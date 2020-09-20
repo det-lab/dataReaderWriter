@@ -22,25 +22,7 @@ However, it's worth being aware that this can very quickly become a tedious and 
 
 One code-generating option is Kaitai Struct, which uses a yaml-style format to declare a binary data format's structure. The strength is that Kaitai then generates a library of code (in your language of choice) for reading a raw data file. The advantage of this is that the code can be directly included as a library into another program. 
 
-Click [here](kaitai/) for more information about Kaitai Struct.
-
-Click [here](kaitai/simple-example) for an example of how to use Kaitai Struct to interface with binary data.
-
-Note: If trying to hand-write code to interface with toy data, you may experience some strangeness with species names (eg. additional characters being rendered with "cat").
-
-Example FISH function to build `kaitai-struct-compiler` from source:
-```
-# rebuild kaitai-struct-compiler
-function build-ksc
-  cd ~/dev/awkward-kaitai/kaitai_struct_compiler
-  if sbt compilerJVM/debian:packageBin
-    pls dpkg -i ~/dev/awkward-kaitai/kaitai_struct_compiler/jvm/target/kaitai-struct-compiler_0.9-SNAPSHOT_all.deb
-  else
-    echo 'ksc failed to compile!'
-  end
-  cd -
-end
-```
+See the [kaitai](kaitai/) directory for [more information about kaitai](docs/kaitai-struct.md), as well as some example code using Kaitai Struct Compiler.
 
 ### DFDL
 
