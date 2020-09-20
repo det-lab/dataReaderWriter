@@ -44,7 +44,7 @@ When Awkward target is fully implemented, you will need:
 **Note** - This guide assumes:
 - Debian/Ubuntu
 - Bash
-- /opt read-write acces (can be done in a docker container if this is an issue! see [this dockerfile](../../docker/Dockerfile) as an example)
+- /opt read-write access (can be done in a docker container if this is an issue! see [this dockerfile](../../docker/Dockerfile) as an example)
 
 Dependencies / Initial Setup:
 
