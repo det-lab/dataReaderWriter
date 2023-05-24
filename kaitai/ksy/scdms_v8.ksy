@@ -30,29 +30,8 @@ seq:
   - id: odb
     size: odb_size
     
-  - id: evt_id
-    type: u2
-  - id: trigger_mask
-    type: u2
-  - id: serial_number
-    type: u4
-  - id: time_stamp
-    type: u4
-  - id: evt_data_size
-    type: u4
-  - id: all_banks_size
-    type: u4
-  - id: flags
-    type: u4
-  
-  - id: bank_name
-    type: str
-    size: 4
-    encoding: utf-8
-  - id: type
-    type: u4
-  - id: bank_size
-    type: u4
+  - id: midas_hdr
+    type: midas_header
     
   - id: scdms_hdr
     type: scdms_header
@@ -63,9 +42,53 @@ seq:
   - id: scdms_ftr
     type: scdms_footer
   
+  - id: midas_hdr2
+    type: midas_header
+  - id: bank_data2
+    size: midas_hdr2.bank_size
+    
+  - id: midas_hdr3
+    type: midas_header
+  - id: scdms_hdr2
+    type: scdms_header
+  - id: trigger_blk2
+    type: trigger_block
+    repeat: expr
+    repeat-expr: scdms_hdr.total_triggers
+  - id: scdms_ftr2
+    type: scdms_footer
 
+  - id: midas_hdr4
+    type: midas_header
+  - id: bank_data4
+    size: midas_hdr4.bank_size
 
 types:
+
+  midas_header:
+    seq:
+      - id: evt_id
+        type: u2
+      - id: trigger_mask
+        type: u2
+      - id: serial_number
+        type: u4
+      - id: time_stamp
+        type: u4
+      - id: evt_data_size
+        type: u4
+      - id: all_banks_size
+        type: u4
+      - id: flags
+        type: u4
+      - id: bank_name
+        type: str
+        size: 4
+        encoding: utf-8
+      - id: type
+        type: u4
+      - id: bank_size
+        type: u4
 
   scdms_header:
 
