@@ -30,40 +30,27 @@ seq:
   - id: odb
     size: odb_size
     
-  - id: midas_hdr
-    type: midas_header
-    
-  - id: scdms_hdr
-    type: scdms_header
-  - id: trigger_blk
-    type: trigger_block
-    repeat: expr
-    repeat-expr: scdms_hdr.total_triggers
-  - id: scdms_ftr
-    type: scdms_footer
-  
-  - id: midas_hdr2
-    type: midas_header
-  - id: bank_data2
-    size: midas_hdr2.bank_size
-    
-  - id: midas_hdr3
-    type: midas_header
-  - id: scdms_hdr2
-    type: scdms_header
-  - id: trigger_blk2
-    type: trigger_block
-    repeat: expr
-    repeat-expr: scdms_hdr.total_triggers
-  - id: scdms_ftr2
-    type: scdms_footer
-
-  - id: midas_hdr4
-    type: midas_header
-  - id: bank_data4
-    size: midas_hdr4.bank_size
+  - id: entry
+    type: entry_block
+    repeat: eos
 
 types:
+
+  entry_block:
+    seq:
+      - id: midas_hdr
+        type: midas_header
+        
+      - id: scdms_data
+        type: scdms_data_block
+        if: midas_hdr.bank_name == "SCD0"
+      - id: dmc_data
+        size: midas_hdr.bank_size
+        if: midas_hdr.bank_name == "DMC0"
+      - id: data
+        size: midas_hdr.bank_size
+        if: midas_hdr.bank_name != "SCD0" and midas_hdr.bank_name != "DMC0"
+  
 
   midas_header:
     seq:
@@ -89,6 +76,17 @@ types:
         type: u4
       - id: bank_size
         type: u4
+
+  scdms_data_block:
+    seq:
+      - id: scdms_hdr
+        type: scdms_header
+      - id: trigger_blk
+        type: trigger_block
+        repeat: expr
+        repeat-expr: scdms_hdr.total_triggers
+      - id: scdms_ftr
+        type: scdms_footer
 
   scdms_header:
 
