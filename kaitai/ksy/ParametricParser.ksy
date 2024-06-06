@@ -20,8 +20,8 @@ types:
       - id: key
         size: len_key
         type: str
-        encoding: ascii
+        encoding: ASCII
         
       - id: value
         type: strz
-        encoding: ascii
+        encoding: ASCII
