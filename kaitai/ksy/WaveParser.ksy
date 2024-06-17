@@ -31,7 +31,7 @@ types:
     seq:
       - id: identifier
         type: str
-        encoding: ascii
+        encoding: ASCII
         size: 10
       - id: value
         type: f8
