@@ -11,32 +11,75 @@ seq:
     type: u4
   - id: odb
     size: odb_size
-  - id: midas_hdr
-    type: midas_header
-  - id: midas_bank_hdr
-    type: midas_bank_header
-  - id: data
-    size: midas_bank_hdr.bank_size
-  - id: midas_bank_hdr2
-    type: midas_bank_header
-  - id: data2
-    size: midas_bank_hdr2.bank_size
-  - id: midas_bank_hdr3
-    type: midas_bank_header_16bit
-  - id: data3
-    size: midas_bank_hdr3.bank_size
-  - id: midas_bank_hdr4
-    type: midas_bank_header
-
-
+    
+  - id: unknown384
+    size: 384
+    
+  - id: group1
+    type: entry_block_24
+    
+  - id: group2
+    type: entry_block_192
+    repeat: expr
+    repeat-expr: 3
+    
+  - id: group3
+    type: entry_block_168
+    repeat: expr
+    repeat-expr: 2
+    
+  - id: group4
+    type: entry_block_192
+    
+  - id: group5
+    type: entry_block_168
+    
+  - id: group6
+    type: entry_block_192
+    repeat: expr
+    repeat-expr: 2
+    
+  - id: group7
+    type: entry_block_168
+  
+  - id: group8
+    type: entry_block_192
+    
+  - id: group9
+    type: entry_block_168
+    repeat: expr
+    repeat-expr: 2
+  
+    
 types:
 
-  entry_block:
+  entry_block_24:
     seq:
       - id: midas_hdr
         type: midas_header
+      - id: data
+        size: midas_hdr.bank_size
+      - id: unknown
+        type: unknown_pad_24
         
-
+  entry_block_192:
+    seq:
+      - id: midas_hdr
+        type: midas_header
+      - id: data
+        size: midas_hdr.bank_size
+      - id: unknown
+        type: unknown_pad_192
+  
+  entry_block_168:
+    seq:
+      - id: midas_hdr
+        type: midas_header
+      - id: data
+        size: midas_hdr.bank_size
+      - id: unknown
+        type: unknown_pad_168
+    
   midas_header:
     seq:
       - id: evt_id
@@ -53,27 +96,27 @@ types:
         type: u4
       - id: flags
         type: u4
+      - id: bank_name
+        type: str
+        size: 4
+        encoding: utf-8
+      - id: type
+        type: u4
+      - id: bank_size
+        type: u4
         
-  midas_bank_header:
+  unknown_pad_24:
     seq:
-      - id: bank_name
-        type: str
-        size: 4
-        encoding: utf-8
-      - id: type
-        type: u4
-      - id: bank_size
-        type: u4
-
-  midas_bank_header_16bit:
-    seq:
-      - id: bank_name
-        type: str
-        size: 4
-        encoding: utf-8
-      - id: type
-        type: u4
-      - id: bank_size
-        type: u4
       - id: padding
-        type: u4
+        size: 24
+        
+  unknown_pad_168:
+    seq:
+      - id: padding
+        size: 168
+        
+  unknown_pad_192:
+    seq:
+      - id: padding
+        size: 192
+        
