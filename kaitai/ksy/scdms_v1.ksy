@@ -3,99 +3,96 @@ meta:
   endian: le
   
 seq:
-  - id: odb_hdr
-    type: u2
-  - id: unknown
-    size: 10
-  - id: odb_size
-    type: u4
-  - id: odb
-    size: odb_size
-    
-  - id: unknown384
-    size: 384
-    
-  - id: group1
-    type: entry_block_24
-    
-  - id: group2
-    type: entry_block_192
-    repeat: expr
-    repeat-expr: 3
-    
-  - id: group3
-    type: entry_block_168
-    repeat: expr
-    repeat-expr: 2
-    
-  - id: group4
-    type: entry_block_192
-    
-  - id: group5
-    type: entry_block_168
-    
-  - id: group6
-    type: entry_block_192
-    repeat: expr
-    repeat-expr: 2
-    
-  - id: group7
-    type: entry_block_168
   
-  - id: group8
-    type: entry_block_192
+  - id: odb_hdr
+    type: odb_info_header
     
-  - id: group9
-    type: entry_block_168
+  - id: event
+    type: entry_block
     repeat: expr
-    repeat-expr: 2
+    #repeat-expr: 17
+    repeat-expr: 2401
+    
+  - id: odb_ftr
+    type: odb_info_footer
   
     
 types:
 
-  entry_block_24:
+  odb_info_header:
+    seq:
+      - id: odb_hdr
+        type: u2
+      - id: unknown
+        size: 10
+      - id: odb_size
+        type: u4
+      - id: odb
+        size: odb_size
+
+  odb_info_footer:
+    seq:
+      - id: odb
+        type: u2
+      - id: unknown
+        size: 10
+      - id: odb_ftr_size
+        type: u4
+      - id: odb_ftr
+        size: odb_ftr_size
+
+  entry_block:
     seq:
       - id: midas_hdr
         type: midas_header
-      - id: data
-        size: midas_hdr.bank_size
-      - id: unknown
-        type: unknown_pad_24
         
-  entry_block_192:
-    seq:
-      - id: midas_hdr
-        type: midas_header
-      - id: data
-        size: midas_hdr.bank_size
-      - id: unknown
-        type: unknown_pad_192
-  
-  entry_block_168:
-    seq:
-      - id: midas_hdr
-        type: midas_header
-      - id: data
-        size: midas_hdr.bank_size
-      - id: unknown
-        type: unknown_pad_168
-    
+      - id: glob_hdr
+        type: bank_header
+        
+      - id: empty_bank
+        size: 0
+        if: glob_hdr.all_banks_size == 0
+        
+      - id: bank_hdr
+        type: bank32_header
+        size: glob_hdr.all_banks_size
+        if: glob_hdr.all_banks_size > 0
+        
+        
+        
   midas_header:
     seq:
       - id: evt_id
         type: u2
+        doc: |
+          1 for triggered events, 2 for scaler events, 3 for HV events
       - id: trigger_mask
         type: u2
+        doc: |
+          Describes subtype of event
       - id: serial_number
         type: u4
+        doc: |
+          Starts at 0, increments for each event
       - id: time_stamp
         type: u4
       - id: evt_data_size
         type: u4
+        doc: |
+          Size of event excluding header
+        
+  bank_header:
+    seq:
       - id: all_banks_size
         type: u4
+        doc: |
+          Size of following banks, including bank name
       - id: flags
         type: u4
+        
+        
+  bank32_header:
+    seq:
       - id: bank_name
         type: str
         size: 4
@@ -104,19 +101,20 @@ types:
         type: u4
       - id: bank_size
         type: u4
+      - id: data
+        size: bank_size
         
-  unknown_pad_24:
+  # Add after header when done      
+  scdms_header:
+  
     seq:
-      - id: padding
-        size: 24
+      - id: packed_event_size
+        type: u4
+      
+      instances:
+        trig_header:
+          value: ((packed_event_size & 0xf0_00_00_00) >> 28)
+      event_size:
+          value: (packed_event_size & 0x0f_ff_ff_ff)
         
-  unknown_pad_168:
-    seq:
-      - id: padding
-        size: 168
-        
-  unknown_pad_192:
-    seq:
-      - id: padding
-        size: 192
-        
+  
