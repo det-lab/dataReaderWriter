@@ -13,48 +13,59 @@ seq:
   - id: hdrs
     type: header_list
     repeat: expr
-    repeat-expr: 180
+    repeat-expr: detector_hdr.repeat_value
     
-  - id: event_hdr
-    type: event_header
-    
-  - id: logic_rcrd
-    type: logical_record_header
-  
-  - id: unknown
-    size: 76
-  
-  - id: data
-    type: trace_data
-    repeat: expr
-    repeat-expr: 180
-    
-  - id: unknown2
-    size: 3496
-    
-  - id: event_hdr2
-    type: event_header
-    
-  - id: logic_rcrd2
-    type: logical_record_header
-    
-  - id: unknown3
-    size: 76
-    
-  - id: data2
-    type: trace_data
-    repeat: expr
-    repeat-expr: 180
-    
-  - id: unknown4
-    size: 528
-    
-  - id: repeat_events
-    type: events
-    repeat: expr
-    repeat-expr: 3
+  # Will take a while to finish  
+  #- id: repeat_events
+  #  type: events
+  #  repeat: detector_hdr.repeat_value
 
 types:
+
+  two_word_file_header:
+    seq:
+      - id: endian_indicator
+        size: 4
+        doc: |
+          le if '[4, 3, 2, 1]'
+          be if '[1, 2, 3, 4]'
+        
+      - id: data_format
+        type: format_word
+        
+  detector_config_header:
+    seq:
+      - id: header_number
+        type: u4
+        
+      - id: config_record_len
+        type: u4
+        
+    instances:
+      repeat_value:
+        value: (config_record_len / 72) + (config_record_len / 144)
+        doc: |
+          Explaining in case this doesn't hold in other files:
+          Phonon config sections use 52 bytes
+          Charge config sections use 40 bytes
+          There are twice as many phonon sections than charge
+          Found as 52x + 40y = config_record_len
+          x + y = repeat_value
+          3x/2  = 3y = repeat_value
+        
+  header_list:
+    seq:
+      - id: header_number
+        type: u4
+        
+      - id: phonon_config
+        type: phonon_config_header
+        if: header_number == 0x10001
+        
+      - id: charge_config
+        type: charge_config_header
+        if: header_number == 0x10002
+  
   # Should be able to repeat this to eos 
   # When the unknown segments are captured
   events:
@@ -71,36 +82,12 @@ types:
       - id: data
         type: trace_data
         repeat: expr
-        repeat-expr: 180
+        repeat-expr: _root.detector_hdr.repeat_value
         
       - id: unknown2
         size: event_hdr.event_size - (747468)
         # logic_rcrd size + unknown 76 + data size
-
-  header_list:
-    seq:
-      - id: header_number
-        type: u4
         
-      - id: phonon_config
-        type: phonon_config_header
-        if: header_number == 0x10001
-        
-      - id: charge_config
-        type: charge_config_header
-        if: header_number == 0x10002
- 
-  two_word_file_header:
-    seq:
-      - id: endian_indicator
-        size: 4
-        doc: |
-          le if '[4, 3, 2, 1]'
-          be if '[1, 2, 3, 4]'
-        
-      - id: data_format
-        type: format_word
-      
   format_word:
     seq:
       - id: daq_major
@@ -111,14 +98,6 @@ types:
         type: u1
       - id: data_format_minor
         type: u1
-        
-  detector_config_header:
-    seq:
-      - id: header_number
-        type: u4
-        
-      - id: config_record_len
-        type: u4
         
   phonon_config_header:
     seq:
@@ -167,7 +146,6 @@ types:
         type: s4
       - id: trace_len
         type: s4
-        
         
   event_header:
     seq:
