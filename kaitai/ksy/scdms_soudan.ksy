@@ -16,9 +16,11 @@ seq:
     repeat-expr: detector_hdr.repeat_value
     
   # Will take a while to finish  
-  #- id: repeat_events
-  #  type: events
-  #  repeat: detector_hdr.repeat_value
+  - id: repeat_events
+    type: events
+  #  repeat: expr
+  #  repeat-expr: 2
+  #  repeat-expr: detector_hdr.repeat_value
 
 types:
 
