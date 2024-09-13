@@ -300,5 +300,25 @@ types:
         repeat: expr
         repeat-expr: trace_rcrd.num_samples / 2
         
-  
+  soudan_history_buffer:
+    seq:
+      - id: history_buffer_header
+        type: u4
+        doc: |
+          0x0000 0021
+      - id: history_buffer_len
+        type: u4
+      - id: number_veto_times
+        type: u4
+      - id: time
+        type: u4
+        repeat: expr
+        repeat-expr: number_veto_times
+      - id: number_veto_mask_per_time
+        type: u4
+      - id: vet_mask_times
+        type: u4
+        repeat: expr
+        repeat-expr: number_veto_mask_per_time
+        
         
