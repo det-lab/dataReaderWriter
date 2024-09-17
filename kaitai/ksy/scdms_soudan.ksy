@@ -15,7 +15,7 @@ seq:
     repeat: expr
     repeat-expr: detector_hdr.repeat_value
     
-  # Will take a while to finish  
+  # Very computationally expensive  
   - id: logical_rcrds
     type: logical_records
     repeat: eos
@@ -82,11 +82,6 @@ types:
         
       - id: soudan_buffer
         type: soudan_history_buffer
-        
-    instances:
-      status_byte_lookahead:
-        pos: _io.pos
-        type: u4
         
   format_word:
     seq:
@@ -358,11 +353,15 @@ types:
         type: u4
         # Following are all null if len = 0
       - id: gps_year_day
-        size: (len > 0) ? 4 : 0
+        size: len_value
       - id: gps_status_hour_minute_second
-        size: (len > 0) ? 4 : 0
+        size: len_value
       - id: gps_microsecs_from_gps_second
-        size: (len > 0) ? 4 : 0
+        size: len_value
+        
+    instances:
+      len_value:
+        value: (len > 0) ? 4 : 0
         
   detector_trigger_threshold_data:
     seq:
