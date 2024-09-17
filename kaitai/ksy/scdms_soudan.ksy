@@ -35,7 +35,7 @@ types:
         
   detector_config_header:
     seq:
-      - id: header_number
+      - id: header_num
         type: u4
         
       - id: config_record_len
@@ -47,16 +47,16 @@ types:
         
   header_list:
     seq:
-      - id: header_number
+      - id: header_num
         type: u4
         
       - id: phonon_config
         type: phonon_config_header
-        if: header_number == 0x10001
+        if: header_num == 0x10001
         
       - id: charge_config
         type: charge_config_header
-        if: header_number == 0x10002
+        if: header_num == 0x10002
   
   logical_records:
     seq:
@@ -100,7 +100,7 @@ types:
         type: u4
       - id: detector_code
         type: s4
-      - id: tower_number
+      - id: tower_num
         type: s4
       - id: post_amp_gain
         type: s4
@@ -127,7 +127,7 @@ types:
         type: u4
       - id: detector_code
         type: s4
-      - id: tower_number
+      - id: tower_num
         type: s4
       - id: channel_post_amp
         type: s4
@@ -190,7 +190,7 @@ types:
         
   administrative_record:
     seq:
-      - id: header_number
+      - id: header_num
         type: u4
         doc: |
           0x0000 0002: Admin, Long Series Num
@@ -199,15 +199,15 @@ types:
         type: u4
         doc: |
           24 bytes
-      - id: series_number_1
+      - id: series_num_1
         type: u4
         doc: |
           LLYYMMDD
-      - id: series_number_2
+      - id: series_num_2
         type: u4
         doc: |
           HHMM
-      - id: event_number_in_series
+      - id: event_num_in_series
         type: u4
       - id: seconds_from_epoch
         type: u4
@@ -226,7 +226,7 @@ types:
         
   trace_record:
     seq:
-      - id: header_number
+      - id: header_num
         type: u4
         doc: |
           0x0000 0011
@@ -296,18 +296,18 @@ types:
           0x0000 0021
       - id: history_buffer_len
         type: u4
-      - id: num_veto_times
+      - id: num_time_nvt
         type: u4
       - id: time_nvt
         type: u4
         repeat: expr
-        repeat-expr: num_veto_times
+        repeat-expr: num_time_nvt
       - id: num_veto_mask_words
         type: u4
       - id: time_n_minus_veto_mask
         type: u4
         repeat: expr
-        repeat-expr: num_veto_times * num_veto_mask_words
+        repeat-expr: num_time_nvt * num_veto_mask_words
       - id: num_trigger_times
         type: u4
       - id: times
@@ -351,7 +351,6 @@ types:
         type: u4
       - id: len
         type: u4
-        # Following are all null if len = 0
       - id: gps_year_day
         size: len_value
       - id: gps_status_hour_minute_second
@@ -363,72 +362,72 @@ types:
       len_value:
         value: '(len > 0) ? 4 : 0'
         
-  detector_trigger_threshold_data:
-    seq:
-      - id: threshold_header
-        type: u4
-      - id: len_to_next_header
-        type: u4
-      - id: minimum_voltage_level
-        type: u4
-      - id: maximum_voltage_level
-        type: u4
-      - id: dynamic_range
-        type: u4
-      - id: tower_number
-        type: u4
-      - id: detector_codes
-        type: u4
-        repeat: expr
-        repeat-expr: 6
-      - id: operations_codes
-        type: u4
-        repeat: expr
-        repeat-expr: 9
-      - id: adc_values
-        type: u4
-        repeat: expr
-        repeat-expr: 54
+  #detector_trigger_threshold_data:
+  #  seq:
+  #    - id: threshold_header
+  #      type: u4
+  #    - id: len_to_next_header
+  #      type: u4
+  #    - id: minimum_voltage_level
+  #      type: u4
+  #    - id: maximum_voltage_level
+  #      type: u4
+  #    - id: dynamic_range
+  #      type: u4
+  #    - id: tower_num
+  #      type: u4
+  #    - id: detector_codes
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 6
+  #    - id: operations_codes
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 9
+  #    - id: adc_values
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 54
         
-  detector_trigger_rates:
-    seq:
-      - id: detector_trigger_header
-        type: u4
-      - id: len_to_next_header
-        type: u4
-      - id: clocking_interval
-        type: u4
-      - id: tower_number
-        type: u4
-      - id: detector_codes
-        type: u4
-        repeat: expr
-        repeat-expr: 6
-      - id: j_codes
-        type: u4
-        repeat: expr
-        repeat-expr: 5
-      - id: counter_values
-        type: u4
-        repeat: expr
-        repeat-expr: 30
+  #detector_trigger_rates:
+  #  seq:
+  #    - id: detector_trigger_header
+  #      type: u4
+  #    - id: len_to_next_header
+  #      type: u4
+  #    - id: clocking_interval
+  #      type: u4
+  #    - id: tower_num
+  #      type: u4
+  #    - id: detector_codes
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 6
+  #    - id: j_codes
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 5
+  #    - id: counter_values
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: 30
         
-  veto_trigger_rates:
-    seq:
-      - id: veto_trigger_header
-        type: u4
-      - id: len_to_next_header
-        type: u4
-      - id: clocking_interval
-        type: u4
-      - id: num_entries
-        type: u4
-      - id: detector_code
-        type: u4
-        repeat: expr
-        repeat-expr: num_entries
-      - id: counter_value_det_code
-        type: u4
-        repeat: expr
-        repeat-expr: num_entries
+  #veto_trigger_rates:
+  #  seq:
+  #    - id: veto_trigger_header
+  #      type: u4
+  #    - id: len_to_next_header
+  #      type: u4
+  #    - id: clocking_interval
+  #      type: u4
+  #    - id: num_entries
+  #      type: u4
+  #    - id: detector_code
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: num_entries
+  #    - id: counter_value_det_code
+  #      type: u4
+  #      repeat: expr
+  #      repeat-expr: num_entries
         
