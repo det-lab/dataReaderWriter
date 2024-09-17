@@ -16,11 +16,9 @@ seq:
     repeat-expr: detector_hdr.repeat_value
     
   # Will take a while to finish  
-  - id: repeat_events
-    type: events
-  #  repeat: expr
-  #  repeat-expr: 2
-  #  repeat-expr: detector_hdr.repeat_value
+  - id: logical_rcrds
+    type: logical_records
+    repeat: eos
 
 types:
 
@@ -46,14 +44,6 @@ types:
     instances:
       repeat_value:
         value: (config_record_len / 72) + (config_record_len / 144)
-        doc: |
-          Explaining in case this doesn't hold in other files:
-          Phonon config sections use 52 bytes
-          Charge config sections use 40 bytes
-          There are twice as many phonon sections than charge
-          Found as 52x + 40y = config_record_len
-          x + y = repeat_value
-          3x/2  = 3y = repeat_value
         
   header_list:
     seq:
@@ -68,27 +58,35 @@ types:
         type: charge_config_header
         if: header_number == 0x10002
   
-  # Should be able to repeat this to eos 
-  # When the unknown segments are captured
-  events:
+  logical_records:
     seq:
       - id: event_hdr
         type: event_header
         
-      - id: logic_rcrd
-        type: logical_record_header
+      - id: admin_rcrd
+        type: administrative_record
         
-      - id: unknown
-        size: 76
+      - id: trigger_rcrd
+        type: trigger_record_format
+      
+      - id: tlb_trig_mask_rcrd
+        type: tlb_trigger_mask_record
+      
+      - id: gps_data
+        type: gps_data
         
-      - id: data
+      - id: trace_rcrd
         type: trace_data
         repeat: expr
         repeat-expr: _root.detector_hdr.repeat_value
         
-      - id: unknown2
-        size: event_hdr.event_size - (747468)
-        # logic_rcrd size + unknown 76 + data size
+      - id: soudan_buffer
+        type: soudan_history_buffer
+        
+    instances:
+      status_byte_lookahead:
+        pos: _io.pos
+        type: u4
         
   format_word:
     seq:
@@ -195,18 +193,13 @@ types:
           0x9: 133Ba Calibration
           0xa: Veto OR Multiplicity Trigger
         
-  logical_record_header:
+  administrative_record:
     seq:
-      - id: admin_header
+      - id: header_number
         type: u4
         doc: |
           0x0000 0002: Admin, Long Series Num
                        (Event Num, Timestamp, Livetime, ...)
-          0x0000 0011: Trace, Long Detector Code
-          0x0000 0021: Soudan History Buffer
-          0x0000 0060: GPS Date/Time
-          0x0000 0080: Trigger
-          0x0000 0081: TLB Trigger Mask
       - id: admin_len
         type: u4
         doc: |
@@ -238,7 +231,7 @@ types:
         
   trace_record:
     seq:
-      - id: trace_header
+      - id: header_number
         type: u4
         doc: |
           0x0000 0011
@@ -308,17 +301,135 @@ types:
           0x0000 0021
       - id: history_buffer_len
         type: u4
-      - id: number_veto_times
+      - id: num_veto_times
         type: u4
-      - id: time
-        type: u4
-        repeat: expr
-        repeat-expr: number_veto_times
-      - id: number_veto_mask_per_time
-        type: u4
-      - id: vet_mask_times
+      - id: time_nvt
         type: u4
         repeat: expr
-        repeat-expr: number_veto_mask_per_time
+        repeat-expr: (num_veto_times > 0) ? num_veto_times: 0
+      - id: num_veto_mask_words
+        type: u4
+      - id: time_n_minus_veto_mask
+        type: u4
+        repeat: expr
+        repeat-expr: num_veto_times * num_veto_mask_words
+      - id: num_trigger_times
+        type: u4
+      - id: times
+        type: u4
+        repeat: expr
+        repeat-expr: num_trigger_times
+      - id: num_trigger_mask_words_per_time
+        type: u4
+      - id: times_minus_trigger_mask
+        type: u4
+        repeat: expr
+        repeat-expr: num_trigger_mask_words_per_time * num_trigger_times
         
+  trigger_record_format:
+    seq:
+      - id: trigger_header
+        type: u4
+      - id: trigger_len
+        type: u4
+      - id: trigger_time
+        type: u4
+      - id: individual_trigger_mask
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+        
+  tlb_trigger_mask_record:
+    seq:
+      - id: tlb_mask_header
+        type: u4
+      - id: tlb_len
+        type: u4
+      - id: tower_mask
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+        
+  gps_data:
+    seq:
+      - id: tlb_mask_header
+        type: u4
+      - id: len
+        type: u4
+        # Following are all null if len = 0
+      - id: gps_year_day
+        size: (len > 0) ? 4 : 0
+      - id: gps_status_hour_minute_second
+        size: (len > 0) ? 4 : 0
+      - id: gps_microsecs_from_gps_second
+        size: (len > 0) ? 4 : 0
+        
+  detector_trigger_threshold_data:
+    seq:
+      - id: threshold_header
+        type: u4
+      - id: len_to_next_header
+        type: u4
+      - id: minimum_voltage_level
+        type: u4
+      - id: maximum_voltage_level
+        type: u4
+      - id: dynamic_range
+        type: u4
+      - id: tower_number
+        type: u4
+      - id: detector_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+      - id: operations_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 9
+      - id: adc_values
+        type: u4
+        repeat: expr
+        repeat-expr: 54
+        
+  detector_trigger_rates:
+    seq:
+      - id: detector_trigger_header
+        type: u4
+      - id: len_to_next_header
+        type: u4
+      - id: clocking_interval
+        type: u4
+      - id: tower_number
+        type: u4
+      - id: detector_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+      - id: j_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 5
+      - id: counter_values
+        type: u4
+        repeat: expr
+        repeat-expr: 30
+        
+  veto_trigger_rates:
+    seq:
+      - id: veto_trigger_header
+        type: u4
+      - id: len_to_next_header
+        type: u4
+      - id: clocking_interval
+        type: u4
+      - id: num_entries
+        type: u4
+      - id: detector_code
+        type: u4
+        repeat: expr
+        repeat-expr: num_entries
+      - id: counter_value_det_code
+        type: u4
+        repeat: expr
+        repeat-expr: num_entries
         
