@@ -361,7 +361,7 @@ types:
         
     instances:
       len_value:
-        value: (len > 0) * 4 # len > 0 returns 1 if true and 0 if false
+        value: '(len > 0) ? 4 : 0'
         
   detector_trigger_threshold_data:
     seq:
