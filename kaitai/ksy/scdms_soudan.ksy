@@ -306,7 +306,7 @@ types:
       - id: time_nvt
         type: u4
         repeat: expr
-        repeat-expr: (num_veto_times > 0) ? num_veto_times : 0
+        repeat-expr: num_veto_times > 0 ? num_veto_times : 0
       - id: num_veto_mask_words
         type: u4
       - id: time_n_minus_veto_mask
