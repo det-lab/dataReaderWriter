@@ -5,8 +5,9 @@ import os
 import re
 
 directory = '/data3/afisher/cdmslite-run3-cuts-output/'
+
 # Load cdms id file
-id_path = directory+'ID_CDMSliteR3.csv'
+id_path = directory+'ID_CDMSliteR3_small.csv'
 # Create array of file names in directory
 file_names = []
 
@@ -27,27 +28,18 @@ def create_tables(output_path):
         short_names = []
 
         # pattern fits files like: cut_output_bg-restricted_IsGlitch_chisq_CDMSliteR3.csv
-        pattern = r'(?:(cut_output_bg-|out_bg-))(?:restricted_)(.*?)(?:_CDMSliteR3.csv)'
-
-        # allCuts_pattern fits files like: out_bg-restricted_allCutsOld_inclPmult.csv
-        allCuts_pattern = r'(?:.*?-restricted_)(.*?)(?:\.csv)'
+        pattern = r'(?:.*?-restricted_)(.*?)(?:\_small.csv)'
 
         for file in file_names:
-            if file in ['ID_CDMSliteR3.csv', 'README.md']:
-                continue
-            # Skip test files
-            if "_small" in file:
+            if file in ['ID_CDMSliteR3_small.csv', 'README.md']:
                 continue
             match = re.search(pattern, file)
-            allCuts_match = re.search(allCuts_pattern, file)
             # Fill list with names to create easy to read group names
+            #print(match, file)
             if match:
-                name = match.group(1) + match.group(2)
-
-            elif allCuts_match:
-                name = allCuts_match.group(1)
-            
-            if name:
+                name = match.group(1)
+                
+                #print(match)
                 short_names.append(name)
 
                 # Load data into df
@@ -64,7 +56,6 @@ def create_tables(output_path):
 
         # Save each boolean column as a separate dataset
         for col in bool_df.columns[1:]:
-            #print(f"Saving column {col} with type {bool_df[col].dtype}")
             cut_data_group.create_dataset(col, data=bool_df[col].to_numpy())
 
         id_group = f.create_group('UID')
@@ -73,13 +64,15 @@ def create_tables(output_path):
         id_group.create_dataset('series_ids', data=cdms_ids.iloc[:,1].to_numpy())
 
     return bool_df
- 
+
+
 def relate_index(index, bool_df):
     # Load ID data into function
     directory = '/data3/afisher/cdmslite-run3-cuts-output/'
-    id_path = directory+'ID_CDMSliteR3.csv'
+    # Load cdms id file
+    id_path = directory+'ID_CDMSliteR3_small.csv'
+    # Load id file into a dataframe
     cdms_ids = pd.read_csv(id_path, header = None, names = ['index', 'series-event'])
-
     # Split series-event column into 'series_number' and 'event_number'
     cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
     cdms_ids = cdms_ids.drop('series-event', axis=1)
@@ -87,12 +80,17 @@ def relate_index(index, bool_df):
     series = cdms_ids.loc[index, 'series_number']
     event_number = cdms_ids.loc[index, 'event_number']
     cut_info = bool_df.loc[index]
+
+    
     
     return series, event_number, cut_info
+
 
 
 output_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/metadata_small.hdf5'
 #create_tables(output_path)
 bool_df = create_tables(output_path)
+series, event_number, cut_info = relate_index(4, bool_df)
+print(cut_info)
 
-print(bool_df.head())
+#print(bool_df.head())
