@@ -65,14 +65,13 @@ def create_tables(output_path):
 
     return bool_df
 
-
+# Given an index, return series, event, and bool_df
 def relate_index(index, bool_df):
     # Load ID data into function
     directory = '/data3/afisher/cdmslite-run3-cuts-output/'
-    # Load cdms id file
     id_path = directory+'ID_CDMSliteR3_small.csv'
-    # Load id file into a dataframe
     cdms_ids = pd.read_csv(id_path, header = None, names = ['index', 'series-event'])
+
     # Split series-event column into 'series_number' and 'event_number'
     cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
     cdms_ids = cdms_ids.drop('series-event', axis=1)
@@ -81,16 +80,33 @@ def relate_index(index, bool_df):
     event_number = cdms_ids.loc[index, 'event_number']
     cut_info = bool_df.loc[index]
 
-    
-    
     return series, event_number, cut_info
 
+# Given an event number, return index
+def relate_event(event_number, bool_df):
+    # Load ID data into function
+    directory = '/data3/afisher/cdmslite-run3-cuts-output/'
+    id_path = directory+'ID_CDMSliteR3_small.csv'
+    cdms_ids = pd.read_csv(id_path, header = None, names = ['index', 'series-event'])
+    
+    # Split series-event column into 'series_number' and 'event_number'
+    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
+    cdms_ids = cdms_ids.drop('series-event', axis=1)
+
+    row = cdms_ids[cdms_ids['event_number'] == event_number]
+
+    if not row.empty:
+        index = row['index'].values[0]
+    
+    return index
 
 
 output_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/metadata_small.hdf5'
 #create_tables(output_path)
 bool_df = create_tables(output_path)
 series, event_number, cut_info = relate_index(4, bool_df)
-print(cut_info)
+print(f'cut_info:\n{cut_info},\nseries: {series},\nevent_number:{event_number}')
+index = relate_event(event_number, bool_df)
+print(index)
 
 #print(bool_df.head())
