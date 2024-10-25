@@ -1,6 +1,4 @@
 from construct import *
-import h5py
-import numpy as np
 
 format_word = Struct(
     "daq_major" / Byte,
@@ -251,7 +249,6 @@ veto_trigger_rates = Struct(
 )
 
 
-# Generalized logical record
 logical_records = Struct(
     "event_hdr" / Peek(Int32ul),  # Peek to check first
     "next_section" / Struct(
@@ -286,6 +283,7 @@ soudan = Struct(
     "logical_rcrds" / GreedyRange(logical_records)
 )
 
+# Parsing instructions to create smaller files faster
 test = Struct(
     "file_hdr" / two_word_file_header,
     "detector_hdr" / detector_hdr,
@@ -294,17 +292,21 @@ test = Struct(
         header_list
     ),
     "logical_rcrds" / Array(
-        400,
+        1000,
         logical_records
     )
 )
 
+import h5py
+import numpy as np
+
 def parse_file(input_path, output_path):
     with open(input_path, 'rb') as f:
         raw_data = f.read()
-        # Switch between soudan and test to different amounts of parsing
-        parsed_data = test.parse(raw_data)
-        #parsed_data = soudan.parse(raw_data)
+        # Switch between soudan and test for different amounts of parsing
+
+        #parsed_data = test.parse(raw_data)
+        parsed_data = soudan.parse(raw_data)
 
     with h5py.File(output_path, 'w') as f:
         
@@ -347,12 +349,16 @@ def parse_file(input_path, output_path):
         charge_config_list = []
         phonon_config_list = []
 
+        charge_hdr_count = 0
+        phonon_hdr_count = 0
+
         # Create groups for each header and populate them with relevant datasets
         for i, header in enumerate(parsed_data.hdrs):
             # Collecting charge_config data
             if header.header_number == 0x10002:
                 # HDF5 groups require unique names if at same level of structure
-                charge_config_hdr_grp = charge_config_grp.create_group(f'charge_config_{i}')
+                charge_config_hdr_grp = charge_config_grp.create_group(f'charge_config_{charge_hdr_count}')
+                charge_hdr_count += 1
                 charge_config_list.append(charge_config_hdr_grp)
                 hdrs_array.append(charge_config_hdr_grp)
                 for attr_name in ['charge_config_len', 'detector_code', 'tower_number',
@@ -364,7 +370,8 @@ def parse_file(input_path, output_path):
                 
             # Collecting phonon_config data
             elif header.header_number == 0x10001:
-                phonon_config_hdr_grp = phonon_config_grp.create_group(f'phonon_config_{i}')
+                phonon_config_hdr_grp = phonon_config_grp.create_group(f'phonon_config_{phonon_hdr_count}')
+                phonon_hdr_count += 1
                 phonon_config_list.append(header)
                 hdrs_array.append(phonon_config_hdr_grp)
                 for attr_name in ['phonon_config_len', 'detector_code', 'tower_number',
@@ -389,8 +396,6 @@ def parse_file(input_path, output_path):
 
         # Creating groups that can hold each event's records
         logical_rcrd_grp       = f.create_group('logical_rcrds')
-        phonon_pulse_grp       = logical_rcrd_grp.create_group('phonon_pulse')
-        charge_pulse_grp       = logical_rcrd_grp.create_group('charge_pulse')
         event_hdr_grp          = logical_rcrd_grp.create_group('event_hdr')
         admin_rcrd_grp         = logical_rcrd_grp.create_group('admin_rcrd')
         trigger_rcrd_grp       = logical_rcrd_grp.create_group('trigger_rcrd')
@@ -402,7 +407,6 @@ def parse_file(input_path, output_path):
         veto_trig_grp          = logical_rcrd_grp.create_group('veto_trigger_rates')
 
         # Initializing arrays to store the created groups of logical_rcrd data
-        logical_rcrd_array       = []
         event_hdr_array          = []
         admin_rcrd_array         = []
         trigger_rcrd_array       = []
@@ -426,9 +430,6 @@ def parse_file(input_path, output_path):
         tlb_count      = 0
         gps_count      = 0
         trace_count    = 0
-        charge_count   = 0
-        phonon_count   = 0
-        error_count    = 0
         soudan_count   = 0
         detector_count = 0
         veto_count     = 0
@@ -489,7 +490,7 @@ def parse_file(input_path, output_path):
                         trigger_rcrd_array.append(triggers)
 
                     if  type == 'tlb_trigger_mask_rcrd':
-                        # Store tlb_trigger_mask_rcrd in an array
+                        # Store tlb_trigger_mask_rcrd data in an array
                         tlb_trig_mask = []
                         tlb_trig_group_i = tlb_trig_mask_rcrd_grp.create_group(f'{type}_group_{tlb_count}')
                         tlb_count += 1
@@ -573,45 +574,39 @@ def parse_file(input_path, output_path):
                         if detector_type in [1, 2, 4, 5, 6]: # BLIP, FLIP/ZIP/mZIP/ENDCAP (class I)
                             if channel_number in [0, 1]:
                                 charge_pulse_array.append(trace)
-                                charge_pulse_grp.create_dataset(f"charge_{charge_count}", data=trace)
-                                charge_count += 1
+                                trace_record_group_i.create_dataset(f"charge_trace", data=trace)
                             else:
                                 phonon_pulse_array.append(trace)
-                                phonon_pulse_grp.create_dataset(f"phonon_{phonon_count}", data=trace)
-                                phonon_count += 1
+                                trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
                         elif detector_type == 3:
                             veto_array.append(trace)
                             veto_set.add(len(trace))
+                            trace_record_group_i.create_dataset(f'veto_trace', data=trace)
                         elif detector_type == 7: # ENDCAP (class II)
                             if channel_number == 0:
                                 charge_pulse_array.append(trace)
-                                charge_pulse_grp.create_dataset(f"charge_{charge_count}", data=trace)
-                                charge_count += 1
+                                trace_record_group_i.create_dataset(f"charge_trace", data=trace)
                             else:
                                 phonon_pulse_array.append(trace)
-                                phonon_pulse_grp.create_dataset(f"phonon_{phonon_count}", data=trace)
-                                phonon_count += 1
+                                trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
                         elif detector_type == 10: # iZIP (class I)
                             if channel_number in [0, 1, 6, 7]:
                                 charge_pulse_array.append(trace)
-                                charge_pulse_grp.create_dataset(f"charge_{charge_count}", data=trace)
-                                charge_count += 1
+                                trace_record_group_i.create_dataset(f"charge_trace", data=trace)
                             else:
                                 phonon_pulse_array.append(trace)
-                                phonon_pulse_grp.create_dataset(f"phonon_{phonon_count}", data=trace)
-                                phonon_count += 1
+                                trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
                         elif detector_type == 11: # iZIP (class II)
                             if channel_number in [0, 1, 6, 7]:
                                 charge_pulse_array.append(trace)
-                                charge_pulse_grp.create_dataset(f"charge_{charge_count}", data=trace)
-                                charge_count += 1
+                                trace_record_group_i.create_dataset(f"charge_trace", data=trace)
                             else:
                                 phonon_pulse_array.append(trace)
-                                phonon_pulse_grp.create_dataset(f"phonon_{phonon_count}", data=trace)
-                                phonon_count += 1
+                                trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
                         else:
                             error_array.append(trace)
-                            error_set.add(len(trace))
+                            trace_record_group_i.create_dataset(f'error_trace', data=trace)
+                            #error_set.add(len(trace))
                             #print(f"Detector Code {detector_code} not consistent with documentation")
 
                     if type == 'soudan_history_buffer':
@@ -656,23 +651,26 @@ def parse_file(input_path, output_path):
                                 veto.append(veto_trig_data)
                         # Store each veto array in higher level array
                         veto_trig_array.append(veto)
-                   
+
+
         # Print data about the arrays and their values
-        print(f'Detector set:     {detector_type_set}')
-        print(f'Trace length set: {trace_set}')
-        print(f'Error length set: {error_set}')
-        print(f'Veto length set:  {veto_set}')
-        print(f'Charge array len: {len(charge_pulse_array)}')
-        print(f'Phonon array len: {len(phonon_pulse_array)}')
-        print(f'Veto array len:   {len(veto_array)}')
-        print(f'Error array len:  {len(error_array)}')
+        #print(f'Detector set:     {detector_type_set}')
+        #print(f'Trace length set: {trace_set}')
+        #print(f'Error length set: {error_set}')
+        #print(f'Veto length set:  {veto_set}')
+        #print(f'Charge array len: {len(charge_pulse_array)}')
+        #print(f'Phonon array len: {len(phonon_pulse_array)}')
+        #print(f'Veto array len:   {len(veto_array)}')
+        #print(f'Error array len:  {len(error_array)}')
+
 
 #input_path  = "../01120210_0727_F0114"
-#input_path = "/data3/afisher/test/01120210_0727_F0001"
-input_path = "/data3/afisher/test/01130208_1838_F0006"
-output_path = "../parsed2.hdf5"
+input_path = "/data3/afisher/test/01120210_0727_F0001"
+#input_path = "/data3/afisher/test/01130208_1838_F0006"
+#output_path = "/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsed.hdf5"
 
 # For final files, save onto novateur network:
-#output_path = "/data3/afisher/test/parsed_file.hdf5"
+output_path = "/data3/afisher/test/parsed_file.hdf5"
 
+#charge_array, phonon_array, veto_array, error_array = parse_file(input_path, output_path)
 parse_file(input_path, output_path)
