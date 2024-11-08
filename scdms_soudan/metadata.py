@@ -60,9 +60,6 @@ def create_tables(output_path):
 
         cut_data_group = f.create_group("cut_data")
 
-        # Save the 'index' as a separate dataset
-        cut_data_group.create_dataset('index', data=bool_df['index'].to_numpy())
-
         # Save each boolean column as a separate dataset
         for col in bool_df.columns[1:]:
             #print(f"Saving column {col} with type {bool_df[col].dtype}")
@@ -72,9 +69,11 @@ def create_tables(output_path):
 
         id_group.create_dataset('index', data=cdms_ids.iloc[:,0].to_numpy())
         id_group.create_dataset('series_ids', data=cdms_ids.iloc[:,1].to_numpy())
+        id_group.create_dataset('event_numbers', data=cdms_ids['event_number'].to_numpy())
 
-    return bool_df
- 
+    #return bool_df
+
+# Given an index, return
 def relate_index(index, bool_df):
     # Load ID data into function
     directory = '/data3/afisher/cdmslite-run3-cuts-output/'
@@ -92,6 +91,8 @@ def relate_index(index, bool_df):
     return series, event_number, cut_info
 
 # Given an event number, return index
+
+
 def relate_event(event_number):
     # Load ID data into function
     directory = '/data3/afisher/cdmslite-run3-cuts-output/'
@@ -143,24 +144,28 @@ def get_series_numbers(hdf5_file_path):
 
     return event_numbers, series_number
 
-def get_event_data(hdf5_file_path, event_number):
+def get_event_data(hdf5_file_path, output_file_path, event_number):
 
     with h5py.File(hdf5_file_path, 'r') as f:
         # Load admin_rcrds to find event_number
         admin_group = f['logical_rcrds/admin_rcrd']
         admin_groups = [key for key in admin_group.keys() if key.startswith('admin_rcrd')]
+        # Sort the admin groups
         admin_groups = sorted(admin_groups, key=lambda x: int(re.search(r'\d+', x).group()))
         num_admin_groups = len(admin_groups)
 
         # Load trace_data to relate event_number to data
         trace_group = f['logical_rcrds/trace_data']
         trace_groups = [key for key in trace_group.keys() if key.startswith('trace_data')]
+        # Sort the trace groups
         trace_groups = sorted(trace_groups, key=lambda x: int(re.search(r'\d+', x).group()))
         num_trace_groups = len(trace_groups)
 
         # Ratio between trace groups and admin groups
         step_size = num_trace_groups/num_admin_groups
-        #print(f'Step size: {step_size}')
+        print(f'Num of admin records: {num_admin_groups}')
+        print(f'Num of trace data groups: {num_trace_groups}')
+        print(f'Trace records per admin: {step_size}')
 
         # Find the requested event number in the file
         for i in range(num_admin_groups):
@@ -225,7 +230,10 @@ def get_event_data(hdf5_file_path, event_number):
                             trace_data = None
                             type = None
 
-                return trace_match_list, type
+            with h5py.File(output_file_path, 'w') as new_f:
+                trace_match_list_group = new_f.create_group('trace_match')
+                trace_match_list_group.create_dataset('trace_list', data=trace_match_list)
+                trace_match_list_group.create_dataset('data_type', data=type)
 
 def fetch_data(event_number, bool_df, hdf5_file_path):
     # Use event number to find cut data
