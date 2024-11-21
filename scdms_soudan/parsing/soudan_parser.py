@@ -292,7 +292,7 @@ test = Struct(
         header_list
     ),
     "logical_rcrds" / Array(
-        1000,
+        3000,
         logical_records
     )
 )
@@ -300,13 +300,14 @@ test = Struct(
 import h5py
 import numpy as np
 
-def parse_file(input_path, output_path):
+def parse_file(input_path, output_path, use_test_parse=True):
     with open(input_path, 'rb') as f:
         raw_data = f.read()
         # Switch between soudan and test for different amounts of parsing
-
-        #parsed_data = test.parse(raw_data)
-        parsed_data = soudan.parse(raw_data)
+        if use_test_parse:
+            parsed_data = test.parse(raw_data)
+        else:
+            parsed_data = soudan.parse(raw_data)
 
     with h5py.File(output_path, 'w') as f:
         
@@ -465,7 +466,9 @@ def parse_file(input_path, output_path):
                         # Store admin_rcrd data in an array
                         admins = []
                         admin_group_i = admin_rcrd_grp.create_group(f'{type}_group_{admin_count}')
+                        #print(admin_group_i)
                         admin_count += 1
+                        #trace_count = 0
                         for attr_name in ['admin_header', 'admin_len', 'series_number_1', 'series_number_2',
                                         'event_number_in_series', 'seconds_from_epoch', 'time_from_last_event',
                                         'live_time_from_last_event']:
@@ -528,7 +531,6 @@ def parse_file(input_path, output_path):
                     # trace_data contains the actual data samples taken by the detector
                     # As well as the header information describing the events and detectors
                     if type == "trace_data":
-                        #print(record_option.next_section.section)
                         if record_option.next_section.section.trace_rcrds:
                             trace_record_group_i = trace_data_grp.create_group(f'{type}_group_{trace_count}')
                             trace_count += 1
@@ -554,6 +556,7 @@ def parse_file(input_path, output_path):
                         
                         # Which array to store the trace array in depends on the detector type
                         detector_code = record_option.next_section.section.trace_rcrds.detector_code
+                        #print(f'Det code: {detector_code}')
                         # Handling single digit detector types:
                         if len(str(detector_code)) == 8:
                             detector_type = int(str(detector_code)[:2])
@@ -570,44 +573,94 @@ def parse_file(input_path, output_path):
                         detector_type_set.add(detector_type)
                         channel_number_set.add(channel_number)
                         trace_set.add(len(trace))
-                        # Use detector types to sort data into charge and phonon groups
-                        if detector_type in [1, 2, 4, 5, 6]: # BLIP, FLIP/ZIP/mZIP/ENDCAP (class I)
-                            if channel_number in [0, 1]:
+
+                        # Use detector types and channel numbers to sort data into charge and phonon groups
+                        # All veto traces have channel number 0
+                        #if channel_number == 0:
+                        #    veto_array.append(trace)
+                        #    trace_record_group_i.create_dataset('veto_trace', data=trace)
+                        if detector_type == 1: # BLIP
+                            if channel_number in [1, 2]:
+                                charge_pulse_array.append(trace)
+                                trace_record_group_i.create_dataset(f'charge_trace', data=trace)
+                                trace_record_group_i.create_dataset(f'detector_type', data="BLIP")
+                            elif channel_number in [3, 4]:
+                                phonon_pulse_array.append(trace)
+                                trace_record_group_i.create_dataset(f'phonon_trace', data=trace)
+                                trace_record_group_i.create_dataset(f'detector_type', data="BLIP")
+                            else:
+                                error_array.append(trace)
+                                trace_record_group_i.create_dataset('error_trace', data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='BLIP')
+                                print(f'Error on detector: {detector_code}. For detector type: {detector_type}, Chan. Num: {channel_number} not related.')
+                        elif detector_type in [2, 4, 5, 6]: # FLIP/ZIP/mZIP/ENDCAP (class I)
+                            if channel_number in [1, 2]:
                                 charge_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"charge_trace", data=trace)
-                            else:
+                                trace_record_group_i.create_dataset(f'detector_type', data="FLIP/ZIP/mZIP/ENDCAP (class I)")
+                            elif channel_number in [2, 3, 4, 5]:
                                 phonon_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
+                                trace_record_group_i.create_dataset(f'detector_type', data="FLIP/ZIP/mZIP/ENDCAP (class I)")
+                            else:
+                                error_array.append(trace)
+                                trace_record_group_i.create_dataset('error_trace', data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='BLIP')
+                                print(f'Error on detector: {detector_code}. For detector type: {detector_type}, Chan. Num: {channel_number} not related.')
+                        # Detector type 3 is also all veto
                         elif detector_type == 3:
                             veto_array.append(trace)
                             veto_set.add(len(trace))
                             trace_record_group_i.create_dataset(f'veto_trace', data=trace)
+                            trace_record_group_i.create_dataset(f'detector_type', data='Veto')
                         elif detector_type == 7: # ENDCAP (class II)
                             if channel_number == 0:
                                 charge_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"charge_trace", data=trace)
-                            else:
+                                trace_record_group_i.create_dataset(f'detector_type', data='endcap (class II)')
+                            elif channel_number in [1, 2]:
                                 phonon_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
+                                trace_record_group_i.create_dataset(f'detector_type', data='endcap (class II)')
+                            else:
+                                error_array.append(trace)
+                                trace_record_group_i.create_dataset('error_trace', data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='endcap (class II)')
+                                print(f'Error on detector: {detector_code}. For detector type: {detector_type}, Chan. Num: {channel_number} not related.')
                         elif detector_type == 10: # iZIP (class I)
                             if channel_number in [0, 1, 6, 7]:
                                 charge_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"charge_trace", data=trace)
-                            else:
+                                trace_record_group_i.create_dataset(f'detector_type', data='iZip (class I)')
+                            elif channel_number in [2, 3, 4, 5, 8, 9, 10, 11]:
                                 phonon_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
+                                trace_record_group_i.create_dataset(f'detector_type', data='iZip (class I)')
+                            else:
+                                error_array.append(trace)
+                                trace_record_group_i.create_dataset('error_trace', data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='iZip (class I)')
+                                print(f'Error on detector: {detector_code}. For detector type: {detector_type}, Chan. Num: {channel_number} not related.')
                         elif detector_type == 11: # iZIP (class II)
                             if channel_number in [0, 1, 6, 7]:
                                 charge_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"charge_trace", data=trace)
-                            else:
+                                trace_record_group_i.create_dataset('detector_type', data='iZip (class II)')
+                            elif channel_number in [2, 3, 4, 5, 8, 9, 10, 11]:
                                 phonon_pulse_array.append(trace)
                                 trace_record_group_i.create_dataset(f"phonon_trace", data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='iZip (class II)')
+                            else:
+                                error_array.append(trace)
+                                trace_record_group_i.create_dataset('error_trace', data=trace)
+                                trace_record_group_i.create_dataset('detector_type', data='iZip (class II)')
+                                print(f'Error on detector: {detector_code}. For detector type: {detector_type}, Chan. Num: {channel_number} not related.')
                         else:
                             error_array.append(trace)
                             trace_record_group_i.create_dataset(f'error_trace', data=trace)
-                            #error_set.add(len(trace))
-                            #print(f"Detector Code {detector_code} not consistent with documentation")
+                            trace_record_group_i.create_dataset(f'detector_type', data=f'{detector_type}')
+                            #print(f'Detector type: {detector_type} not associated with known detectors.')
+                            error_set.add(len(trace))
 
                     if type == 'soudan_history_buffer':
                         # Store soudan_history_buffer data in an array
@@ -665,12 +718,26 @@ def parse_file(input_path, output_path):
 
 
 #input_path  = "../01120210_0727_F0114"
-input_path = "/data3/afisher/test/01120210_0727_F0001"
+#input_path = "/data3/afisher/test/01120210_0727_F0001"
 #input_path = "/data3/afisher/test/01130208_1838_F0006"
-#output_path = "/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsed.hdf5"
+
+# This one should contain cut content
+#input_path = '/data3/afisher/test/01150212_1819_F0001'
+#output_path = "/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsed_cut_file.hdf5"
 
 # For final files, save onto novateur network:
-output_path = "/data3/afisher/test/parsed_file.hdf5"
+#output_path = "/data3/afisher/test/parsed_file.hdf5"
 
-#charge_array, phonon_array, veto_array, error_array = parse_file(input_path, output_path)
-parse_file(input_path, output_path)
+#parse_file(input_path, output_path, use_test_parse=False)
+
+# Fully parse 10 files to get a size estimate
+file_list = ['01150211_1500_F0001', '01150211_1500_F0002', 
+             '01150211_1500_F0003', '01150211_1500_F0004', 
+             '01150211_1500_F0005', '01150211_1500_F0006',
+             '01150211_1500_F0007', '01150211_1500_F0008', 
+             '01150211_1500_F0009', '01150211_1500_F0010']
+
+for file in file_list:
+    input_path = f'/data3/afisher/soudan-R135/01150211_1500/{file}'
+    output_path = f'/data3/afisher/test/{file}_parsed.hdf5'
+    parse_file(input_path, output_path, use_test_parse=False)
