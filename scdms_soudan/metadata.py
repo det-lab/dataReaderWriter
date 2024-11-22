@@ -323,12 +323,12 @@ def collect_event_traces(parsed_hdf5_file, output_trace_file):
 
 metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
 create_tables(metadata_file)
-parsed_hdf5_file = '/data3/afisher/test/01150211_1500_F0001_parsed.hdf5'
+#parsed_hdf5_file = '/data3/afisher/test/01150211_1500_F0001_parsed.hdf5'
 
-event_numbers, series = get_event_numbers(parsed_hdf5_file)
-event_number = event_numbers[0]
+#event_numbers, series = get_event_numbers(parsed_hdf5_file)
+#event_number = event_numbers[0]
 
-trace_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_trace_output.hdf5'
-cut_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_cut_output.hdf5'
+#trace_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_trace_output.hdf5'
+#cut_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_cut_output.hdf5'
 
-get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_path, cut_output_path)
+#get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_path, cut_output_path)
