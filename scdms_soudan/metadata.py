@@ -1,87 +1,10 @@
 import h5py
 import pandas as pd
-from collections import Counter
 import matplotlib.pyplot as plt
 import numpy as np
 import os
 import re
-
-directory = '/data3/afisher/cdmslite-run3-cuts-output/'
-# Load cdms id file
-id_path = directory+'ID_CDMSliteR3.csv'
-# Create array of file names in directory
-file_names = []
-
-# Load id file into a dataframe
-cdms_ids = pd.read_csv(id_path, header = None, names = ['index', 'series-event'])
-
-# Split series-event column into 'series_number' and 'event_number'
-cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
-cdms_ids = cdms_ids.drop('series-event', axis=1)
-
-for file in os.listdir(directory):
-    if os.path.isfile(os.path.join(directory, file)):
-        file_names.append(file)
-
-def create_tables(output_path):
-    # Create a dataframe with the ID indices
-    bool_df = pd.DataFrame(cdms_ids['index'])
-    with h5py.File(output_path, 'w') as f:
-        # Shorten file names for readability
-        short_names = []
-
-        # pattern fits files like: cut_output_bg-restricted_IsGlitch_chisq_CDMSliteR3.csv
-        pattern = r'(?:(cut_output_bg-|out_bg-))(?:restricted_)(.*?)(?:_CDMSliteR3.csv)'
-
-        # allCuts_pattern fits files like: out_bg-restricted_allCutsOld_inclPmult.csv
-        allCuts_pattern = r'(?:.*?-restricted_)(.*?)(?:\.csv)'
-
-        for file in file_names:
-            if file in ['ID_CDMSliteR3.csv', 'README.md']:
-                continue
-            # Skip test files
-            if "_small" in file:
-                continue
-            match = re.search(pattern, file)
-            allCuts_match = re.search(allCuts_pattern, file)
-            # Fill list with names to create easy to read group names
-            if match:
-                name = match.group(1) + match.group(2)
-
-            elif allCuts_match:
-                name = allCuts_match.group(1)
-            
-            if name:
-                short_names.append(name)
-
-                # Load data into df
-                cut_data_df = pd.read_csv(os.path.join(directory+file), header = None, names = [name])
-                # Convert df into boolean - turns 1's and 0's into True and False
-                cut_data_df[name] = cut_data_df[name].astype(bool)
-                # Add the boolean column to the main DataFrame
-                bool_df[name] = cut_data_df[name]
-
-        id_group = f.create_group('UID')
-        series_group = id_group.create_group('series')
-        unique_series = cdms_ids['series_number'].unique()
-        for series in unique_series:
-            # Create a group for each series number
-            uid_series_group = series_group.create_group(f'{series}')
-
-            # Filter events in the series
-            series_events = cdms_ids[cdms_ids['series_number'] == series]
-
-            # Load the cut_data for each event
-            for _, row in series_events.iterrows():
-                event_number = row['event_number']
-                event_index = row.name
-                event_group = uid_series_group.create_group(event_number)
-
-                for col in bool_df.columns[1:]:
-                    cut_value = bool_df.loc[event_index, col]
-                    event_group.create_dataset(col, data=cut_value)
-
-
+print('Imports successfull')
 # Given an hdf5 file, return the event numbers in the file
 def get_event_numbers(parsed_hdf5_file_path):
     event_numbers = []
@@ -125,6 +48,7 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
         # Sort the admin groups
         admin_groups = sorted(admin_groups, key=lambda x: int(re.search(r'\d+', x).group()))
         num_admin_groups = len(admin_groups)
+        print(f'Number of admin groups: {num_admin_groups}')
 
         # Load trace_data to relate event_number to data
         trace_group = parsed_f['logical_rcrds/trace_data']
@@ -132,28 +56,33 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
         # Sort the trace groups
         trace_groups = sorted(trace_groups, key=lambda x: int(re.search(r'\d+', x).group()))
         num_trace_groups = len(trace_groups)
+        print(f'Num trace groups: {num_trace_groups}')
 
         # Ratio between trace groups and admin groups
         step_size = num_trace_groups/num_admin_groups
+        print(f'Ratio between trace and admin groups: {step_size}')
 
         # Find the requested event number in the file
         for i in range(num_admin_groups):
             # Iterate through admin groups to find a match
             admin_group = admin_groups[i]
+            print(f'Admin Group: {admin_group}')
             event_num_path = f'logical_rcrds/admin_rcrd/{admin_group}/event_number_in_series'
             event_num = parsed_f[event_num_path]
             event_num = int(event_num[()])
+            print(f'Event number: {event_num}')
 
             # Find match - extract data
             if event_number == event_num:
+                print(f'Found event number: {event_num}')
                 # Find corresponding trace_data
                 trace_group = trace_groups[i]
-                #print(f'Trace group: {trace_group}')
+                print(f'Trace group: {trace_group}')
 
                 trace_det_code_path = f'logical_rcrds/trace_data/{trace_group}/detector_code'
                 trace_det_code = parsed_f[trace_det_code_path]
                 trace_det_code = int(trace_det_code[()])
-                #print(f'Trace detector code: {trace_det_code}')
+                print(f'Trace detector code: {trace_det_code}')
 
                 # Collect traces with matching detector codes
                 trace_match_list = []
@@ -170,6 +99,7 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
 
                     # Find if trace is charge, phonon, veto, or error
                     if match_det_code == trace_det_code:
+                        print(f'Match found: {match_det_code}')
                         charge_match_path = f'{type_path_base}/charge_trace'
                         phonon_match_path = f'{type_path_base}/phonon_trace'
                         veto_match_path = f'{type_path_base}/veto_trace'
@@ -201,8 +131,10 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
                 plt.scatter(x, trace)
             plt.title(type)
             plt.show()
+            print(f'Trace created successfully')
 
             with h5py.File(trace_output_path, 'w') as trace_f:
+                print('Creating trace file')
                 trace_match_list_group = trace_f.create_group(f'{event_number}_trace')
                 trace_match_list_group.create_dataset('trace_data', data=trace_match_list)
                 trace_match_list_group.create_dataset('data_type', data=str(type))
@@ -211,6 +143,7 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
     # Next, collect the cut information
     with h5py.File(metadata_file, 'r') as meta_f:
         # Start by finding the series
+        print('Creating Cut Data')
         _, series = get_event_numbers(parsed_hdf5_file)
         event_path = f'UID/series/{series}/{event_number}'
         meta_event_group = meta_f[event_path]
@@ -219,6 +152,7 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
         with h5py.File(cut_output_path, 'w') as cut_f:
             cut_event_group = cut_f.create_group(f'{event_number}')
             for group in cut_groups:
+                print(f'Cut: {group}')
                 group_data_path = event_path+f'/{group}'
                 group_data = meta_f[group_data_path]
                 group_data = group_data[()]
@@ -320,15 +254,18 @@ def collect_event_traces(parsed_hdf5_file, output_trace_file):
                     dataset_name = f'{trace_type}_{i}'
                     det_code_group.create_dataset(dataset_name, data=trace['trace_data'])
 
-
+print('Running...')
 metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
-create_tables(metadata_file)
-#parsed_hdf5_file = '/data3/afisher/test/01150211_1500_F0001_parsed.hdf5'
+#metadata_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/metadata_test.hdf5'
+#create_tables(metadata_file)
+parsed_hdf5_file = '/data3/afisher/test/01150211_1500_F0001_parsed.hdf5'
 
-#event_numbers, series = get_event_numbers(parsed_hdf5_file)
-#event_number = event_numbers[0]
+event_numbers, series = get_event_numbers(parsed_hdf5_file)
+event_number = event_numbers[0]
+print(f'Testing on event_number: {event_number}')
+print(f'Range of event numbers: {event_numbers[0]}-{event_numbers[-1]}')
 
-#trace_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_trace_output.hdf5'
-#cut_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_cut_output.hdf5'
+trace_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_trace_output.hdf5'
+cut_output_path = f'/home/afisher@novateur.com/dataReaderWriter/NovateurData/series_{series}_event_{event_number}_cut_output.hdf5'
 
-#get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_path, cut_output_path)
+get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_path, cut_output_path)

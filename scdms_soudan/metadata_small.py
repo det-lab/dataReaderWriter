@@ -210,10 +210,13 @@ def get_event_data(parsed_hdf5_file, metadata_file, event_number, trace_output_p
         with h5py.File(cut_output_path, 'w') as cut_f:
             cut_event_group = cut_f.create_group(f'{event_number}')
             for group in cut_groups:
+                print(group)
                 group_data_path = event_path+f'/{group}'
+                print(group_data_path)
                 group_data = meta_f[group_data_path]
                 group_data = group_data[()]
                 cut_event_group.create_dataset(group, data=group_data)
+            print(cut_event_group)
 
 
 def collect_event_traces(parsed_hdf5_file, output_trace_file):
@@ -324,7 +327,8 @@ def collect_event_traces(parsed_hdf5_file, output_trace_file):
 # Create cut metadata file
 metadata_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/metadata_small.hdf5'
 #create_tables(metadata_file)
-parsed_hdf5_file_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsed_cut_file.hdf5'
+#parsed_hdf5_file_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsed_cut_file.hdf5'
+parsed_hdf5_file_path = '/data3/afisher/test/01150211_1500_F0001_parsed.hdf5'
 
 output_cut_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/small_test.hdf5'
 output_event_data_path = '/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/event_test.hdf5'
