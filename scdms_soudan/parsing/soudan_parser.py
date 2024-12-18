@@ -349,10 +349,6 @@ def get_detector_code_info(detector_code):
 
     return det_type, charge, phonon, veto, error, detector_number
 
-# Test detector code
-type, charge, phonon, veto, error, detector_number = get_detector_code_info(3555001)
-print(f'Type: {type}, Charge: {charge}, Phonon: {phonon}, Veto: {veto}, Error: {error}, Detector Number: {detector_number}')
-
 # Print structure function to inspect groups mid processing
 def print_structure(name, obj):
     if isinstance(obj, h5py.Group):
@@ -733,7 +729,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                         error_set.add(len(trace))
                                     #print(f'Sorted into type: {type}')
                                     
-                                    detector_group.create_dataset(f'trace_{trace_group_count}', data=trace)
+                                    detector_group.create_dataset(f'trace', data=trace)
                                     group_counters[det_group_name] += 1
                                     detector_group.create_dataset(f'trace_type', data=type)
                                 except Exception as e:
