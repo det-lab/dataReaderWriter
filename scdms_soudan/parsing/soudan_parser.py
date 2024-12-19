@@ -384,7 +384,7 @@ test = Struct(
 )
 
 def parse_file(input_path, output_path, use_test_parse=True):
-    print('Parsing file...')
+    #print('Parsing file...')
     with open(input_path, 'rb') as f:
         raw_data = f.read()
         # Switch between soudan and test for different amounts of parsing
@@ -404,7 +404,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
         det_hdr_list = []
 
         # file_hdr and detector_hdr contain no arrays
-        print('Parsing File Headers...')
+        #print('Parsing File Headers...')
         for file_hdr_type in parsed_data.file_hdr:
             hdr_type_grp = file_hdr_grp.create_group(f'{file_hdr_type}')
             file_hdr_word_list.append(hdr_type_grp)
@@ -416,7 +416,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
             elif file_hdr_type == "endian_indicator":
                 hdr_type_grp.create_dataset('endian_indicator', data=parsed_data.file_hdr.endian_indicator)
         
-        print('Parsing Detector Headers...')
+        #print('Parsing Detector Headers...')
         for det_data_type in parsed_data.detector_hdr:
             det_type_grp = detector_hdr_grp.create_group(f'{det_data_type}')
             det_hdr_list.append(det_type_grp)
@@ -440,7 +440,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
         phonon_hdr_count = 0
 
         # Create groups for each header and populate them with relevant datasets
-        print('Creating header groups...')
+        #print('Creating header groups...')
         for i, header in enumerate(parsed_data.hdrs):
             # Collecting charge_config data
             if header.header_number == 0x10002:
@@ -537,7 +537,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
         group_counters = {}
 
         # Create a group with the series number to store trace and event data
-        print('Finding series number...')
+        #print('Finding series number...')
         for record_option in parsed_data.logical_rcrds:
             for value, type in logical_record_options.items():
                 if record_option.next_section.next_header == value:
@@ -546,10 +546,10 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         series_number_2 = record_option.next_section.section.series_number_2
                         series_number = f'{series_number_1}{series_number_2}'
         series_grp = f.create_group(f'S{series_number}')
-        print(f'Series number: {series_number}')
+        #print(f'Series number: {series_number}')
 
         # Loop through all of the Structs in logical_rcrds
-        print('Parsing Logical Records...')
+        #print('Parsing Logical Records...')
         for i, record_option in enumerate(parsed_data.logical_rcrds):
             # Handle event headers separately
             if (record_option.next_section.next_header >> 16) == 0xA980:

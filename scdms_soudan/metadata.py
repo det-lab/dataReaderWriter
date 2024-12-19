@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import re
 import sys
+from collections import defaultdict
 sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsing/')
 import soudan_parser
 print('Imports successful')
@@ -61,6 +62,8 @@ def get_event_data(parsed_hdf5_file, event_number, metadata_file,  trace_output_
         veto_detector_set = set()
         error_detector_set = set()
 
+        detector_type_counts = defaultdict(lambda: defaultdict(int))
+
         with h5py.File(trace_output_file_path, 'w') as output_f:
             series_group = output_f.create_group(f'S{series_number}')
             event_group = series_group.create_group(f'E{event_number}')
@@ -100,6 +103,17 @@ def get_event_data(parsed_hdf5_file, event_number, metadata_file,  trace_output_
                 elif trace_type =='Error':
                     error_traces.append(trace)
                     error_detector_set.add(detector_code)
+
+                detector_type_counts[det_type][trace_type] += 1
+            
+            for det_type, trace_counts in detector_type_counts.items():
+                charge_count = trace_counts.get('Charge', 0)
+                phonon_count = trace_counts.get('Phonon', 0)
+                veto_count = trace_counts.get('Veto', 0)
+                error_count = trace_counts.get('Error', 0)
+                print(f'{det_type} detector type has:\n{charge_count} charge channels,\n{phonon_count} phonon channels,\n{veto_count} veto channels,\nand {error_count} error channels.')
+                print()
+
             detector_info_group = output_f.create_group('detector_lists')
             detector_info_group.create_dataset('charge_detectors', data=list(charge_detector_set))
             detector_info_group.create_dataset('phonon_detectors', data=list(phonon_detector_set))
@@ -254,7 +268,7 @@ def collect_series_data(parsed_hdf5_file, metadata_file, trace_output_file_path,
         #print(event_cut_dictionary)
         with h5py.File(cut_output_file_path, 'w') as cut_f:
             print('Writing output cut file...')
-            output_cut_group = cut_f.create_group('cut_data')
+            output_cut_group = cut_f.create_group(f'S{series_number}_cut_data')
             for meta_out_group, cut_group in event_cut_dictionary.items():
                 #print(meta_out_group, cut_group)
                 # Select event number for events that have cut information
@@ -270,8 +284,36 @@ def collect_series_data(parsed_hdf5_file, metadata_file, trace_output_file_path,
                     group_data = group_data[()]
                     event_number_group_out.create_dataset(group, data=group_data)
 
-print('Running...')
-#metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
+def get_series_info(trace_file, cut_file, event_number, output_file):
+    """
+    Using the output files from collect_series_data, grab data from
+    a given event.This function should ideally be faster than the
+    get_event_data function if collect_series_data was already ran.
+    """
+    print('Running get_series_info...')
+    with h5py.File(trace_file, 'r') as trace_in, h5py.File(cut_file, 'r') as cut_in:
+        print('Accessing trace and cut files...')
+        trace_in_series_group = [key for key in trace_in.keys() if key.startswith('S')]
+        # Grab series number to access series in cut_in
+        series_number = trace_in_series_group[0][1:] # Select the group and remove the 'S'
+        event_number_path = f'S{series_number}/E{event_number}'
+        trace_in_event_groups = trace_in[event_number_path]
+        #print(f'Trace event groups: {trace_in_event_groups}')
+
+        # Grab the relevent groups from the cut_file
+        cut_in_event_path = f'S{series_number}_cut_data/{event_number}'
+        cut_in_event_groups = cut_in[cut_in_event_path]
+        #print(f'Cut event groups: {cut_in_event_groups}')
+
+        with h5py.File(output_file, 'w') as out_f:
+            #print(f'Copying data from {trace_file} & {cut_file} to {output_file}...')
+            series_group = out_f.create_group(f'S{series_number}')
+            series_group.copy(trace_in_event_groups, f'E{event_number}')
+            series_group.copy(cut_in_event_groups, 'cut_data')
+        
+
+#print('Running...')
+##metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
 metadata_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/metadata_small.hdf5'
 parsed_hdf5_file = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
 trace_output_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
@@ -281,10 +323,13 @@ series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file)
 event_number = event_numbers[0]
 print(f'Series number: {series_number}')
 print(f'Testing on event_number: {event_number}')
-print(f'Number of events: {len(event_numbers)}')
+#print(f'Number of events: {len(event_numbers)}')
 get_event_data(parsed_hdf5_file, event_number, metadata_file, trace_output_file, cut_output_file)
 
-# Testing collect_series_data
+## Testing collect_series_data
 trace_output_collect_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/collect_series_trace_test.hdf5'
 cut_output_collect_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/collect_series_cut_test.hdf5'
-collect_series_data(parsed_hdf5_file, metadata_file, trace_output_collect_test, cut_output_collect_test)
+#collect_series_data(parsed_hdf5_file, metadata_file, trace_output_collect_test, cut_output_collect_test)
+
+get_series_info_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_series_info_test.hdf5'
+#get_series_info(trace_output_collect_test, cut_output_collect_test, event_number, get_series_info_test)
