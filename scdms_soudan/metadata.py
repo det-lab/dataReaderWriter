@@ -1,12 +1,12 @@
 import h5py
 import matplotlib.pyplot as plt
+# Suppress unneccessary 3D package warning
+import warnings
+warnings.filterwarnings('ignore', message='Unable to import Axes3D')
 import numpy as np
 import re
-import sys
 from collections import defaultdict
-sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/parsing/')
-import soudan_parser
-print('Imports successful')
+
 
 def get_series_num(parsed_hdf5_file_path):
     with h5py.File(parsed_hdf5_file_path, 'r') as f:
@@ -121,7 +121,17 @@ def get_event_data(parsed_hdf5_file, event_number, metadata_file,  trace_output_
             detector_info_group.create_dataset('error_detectors', data=list(error_detector_set))
     
     with h5py.File(metadata_file, 'r') as meta_f:
+        try:
+            uid_series = meta_f.get('UID/series', None)
+            if uid_series is None:
+                print("Error: 'UID/series' does not exist.")
+            else:
+                print(f"Available keys under 'UID/series': {list(uid_series.keys())}")
+        except Exception as e:
+            print(f"Error accessing 'UID/series': {e}")
+
         event_path = f'UID/series/{series_number}/{event_number}'
+        print(f"Key test: {meta_f['UID/series'].keys()}")
         if event_path not in meta_f:
             print(f'Error: Path {event_path} not found in metadata file.')
             print(f'Available paths:', list(meta_f['UID/series'].keys()))
@@ -310,26 +320,29 @@ def get_series_info(trace_file, cut_file, event_number, output_file):
             series_group = out_f.create_group(f'S{series_number}')
             series_group.copy(trace_in_event_groups, f'E{event_number}')
             series_group.copy(cut_in_event_groups, 'cut_data')
+
+
         
 
 #print('Running...')
-##metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
-metadata_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/metadata_small.hdf5'
+metadata_file = '/data3/afisher/soudan_output/metadata.hdf5'
+
+#metadata_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/metadata_small.hdf5'
 parsed_hdf5_file = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
 trace_output_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
 cut_output_file = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
 
-series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file)
-event_number = event_numbers[0]
-print(f'Series number: {series_number}')
-print(f'Testing on event_number: {event_number}')
+#series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file)
+#event_number = event_numbers[0]
+#print(f'Series number: {series_number}')
+#print(f'Testing on event_number: {event_number}')
 #print(f'Number of events: {len(event_numbers)}')
-get_event_data(parsed_hdf5_file, event_number, metadata_file, trace_output_file, cut_output_file)
+#get_event_data(parsed_hdf5_file, event_number, metadata_file, trace_output_file, cut_output_file)
 
 ## Testing collect_series_data
 trace_output_collect_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/collect_series_trace_test.hdf5'
 cut_output_collect_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/collect_series_cut_test.hdf5'
 #collect_series_data(parsed_hdf5_file, metadata_file, trace_output_collect_test, cut_output_collect_test)
 
-get_series_info_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_series_info_test.hdf5'
+#get_series_info_test = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_series_info_test.hdf5'
 #get_series_info(trace_output_collect_test, cut_output_collect_test, event_number, get_series_info_test)

@@ -2,6 +2,10 @@ import h5py
 import pandas as pd
 import os
 import re
+import sys
+from collections import defaultdict
+sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/')
+import metadata
 
 directory = '/data3/afisher/cdmslite-run3-cuts-output/'
 # Load cdms id file
@@ -253,6 +257,8 @@ def find_valid_series_events(cut_data_file, is_test=True):
             j += 1
 
     return series_and_true_events, series_and_false_events
+
+
 
 
 cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
