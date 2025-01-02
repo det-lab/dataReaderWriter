@@ -28,20 +28,22 @@ print('File list created')
 
 # Use original .csv files instead of constructed hdf5 file
 def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
+    """
+    Create two hdf5 files containing the cut data information and trace data information
+    from a given parsed data file.
+    """
     print('Loading CDMS ID file...')
     if is_test:
-        print(f'Testing get_csv_metadata on:\n{parsed_hdf5_file}\nEvent: {event_number}')
         #Only use the first 10 lines for testing
         cdms_ids = pd.read_csv(cdms_ids_file_path, header=None, names = ['index', 'series-event']).head(10)
-        # Split series-event column into 'series_number' and 'event_number'
-        cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
-        cdms_ids = cdms_ids.drop('series-event', axis=1)
-        print(f'cdms_ids head:\n{cdms_ids.head().to_string(index=True)}')
     else:
         cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
-        # Split series-event column into 'series_number' and 'event_number'
-        cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
-        cdms_ids = cdms_ids.drop('series-event', axis=1)
+    
+    # split series-event column into 'series_number' and 'event_number'
+    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
+    # drop redundant column
+    cdms_ids = cdms_ids.drop('series-event', axis=1)
+    
     print('File loaded.')
     series_number = metadata.get_series_num(parsed_hdf5_file)
     # Find the index of the given event
@@ -220,11 +222,88 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
                 if is_test:
                     print(f'Group: {group_name} Value: {value_at_index}')
         print('Cut output file created.')
+
+def find_valid_series_events(cut_data_file_path, cdms_ids_file_path, is_test=True):
+    """
+    Given a .csv cut data file, return two dictionaries,
+    one of True series-event pairs and another of False series-event pairs
+    """
+    print('Loading CDMS ID file...')
+    if is_test:
+        #Only use the first 10 lines for testing
+        cdms_ids = pd.read_csv(cdms_ids_file_path, header=None, names = ['index', 'series-event']).head(10)
+    else:
+        cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
+    
+    # split series-event column into 'series_number' and 'event_number'
+    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
+    # drop redundant column
+    cdms_ids = cdms_ids.drop('series-event', axis=1)
+    
+    print('File loaded.')
+
+    # Load cut_data_file
+    if is_test:
+        cut_data_file_path = pd.read_csv(cut_data_file_path, header=None, names=['bool']).head(10)
+    else:
+        cut_data_file_path = pd.read_csv(cut_data_file_path, header=None, names=['bool'])
+
+    # Filter for valid rows (where 'bool' = 1)
+    valid_rows = cdms_ids.loc[cut_data_file_path['bool'] == 1]
+    invalid_rows = cdms_ids.loc[cut_data_file_path['bool'] == 0]
+
+    # Group by series_number, event_number as lists
+    series_and_true_events = (
+        valid_rows.groupby('series_number')['event_number']
+        .apply(list)
+        .to_dict()
+    )
+    
+    series_and_false_events = (
+        invalid_rows.groupby('series_number')['event_number']
+        .apply(list)
+        .to_dict()
+    )
+
+    if is_test:
+        print('Valid series and events:')
+        if series_and_true_events == {}:
+            print('None')
+        for series, events in series_and_true_events.items():
+            print(f'Series: {series}, Num true events: {len(events)}')
+        print(f'{series_and_true_events}')
+
+        print('Invalid series and events:')
+        if series_and_false_events == {}:
+            print('None')
+        for series, events in series_and_false_events.items():
+            print(f'Series: {series}, Num false events: {len(events)}')
+        print(f'{series_and_false_events}')
+
+    else:
+        try:
+            first_valid_series, first_valid_event_list = next(iter(series_and_true_events.items()))
+            print(f'First valid series: {first_valid_series}')
+            print(f'First 10 valid events: {first_valid_event_list[0:10]}')
+        except Exception as e:
+            print(f"Failed to form valid series/event lists:\n{e}")
+
+        try:
+            first_invalid_series, first_invalid_event_list = next(iter(series_and_false_events.items()))
+            print(f'First invalid series: {first_invalid_series}')
+            print(f'First 10 invalid events: {first_invalid_event_list[0:10]}')
+        except Exception as e:
+            print(f"Failed to form invalid series/event lists:\n{e}")
+
+    return series_and_true_events, series_and_false_events
         
 # testing
-parsed_hdf5_file_path = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
-trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
-cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
+#parsed_hdf5_file_path = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
+#trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
+#cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
+
+cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
+valid_pairs = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=False)
 
 #series_number, event_numbers = metadata.get_series_and_event_numbers(parsed_hdf5_file_path)
 #event_number = event_numbers[3]
