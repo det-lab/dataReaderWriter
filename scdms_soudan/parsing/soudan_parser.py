@@ -1,6 +1,5 @@
 from construct import *
 import h5py
-import numpy as np
 
 format_word = Struct(
     "daq_major" / Byte,
@@ -384,27 +383,32 @@ test = Struct(
 )
 
 def parse_file(input_path, output_path, use_test_parse=True):
-    #print('Parsing file...')
-    with open(input_path, 'rb') as f:
-        raw_data = f.read()
+    """
+    Given a binary raw data file following the SCDMS-Soudan data format, generate an HDF5 file
+    containing all of the data of the original file.
+    """
+    if use_test_parse:
+        print(f'Parsing {input_path}...')
+    with open(input_path, 'rb') as input_f:
+        raw_data = input_f.read()
         # Switch between soudan and test for different amounts of parsing
         if use_test_parse:
             parsed_data = test.parse(raw_data)
         else:
             parsed_data = soudan.parse(raw_data)
 
-    with h5py.File(output_path, 'w') as f:
+    with h5py.File(output_path, 'w') as output_f:
         
         # Initializing header groups to fill with datasets
-        file_hdr_grp = f.create_group('file_hdr')
-        detector_hdr_grp = f.create_group('detector_hdr')
+        file_hdr_grp = output_f.create_group('file_hdr')
+        detector_hdr_grp = output_f.create_group('detector_hdr')
 
         # Initializing arrays for the header information
         file_hdr_word_list = []
-        det_hdr_list = []
 
         # file_hdr and detector_hdr contain no arrays
-        #print('Parsing File Headers...')
+        if use_test_parse:
+            print('Parsing file headers...')
         for file_hdr_type in parsed_data.file_hdr:
             hdr_type_grp = file_hdr_grp.create_group(f'{file_hdr_type}')
             file_hdr_word_list.append(hdr_type_grp)
@@ -415,21 +419,19 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         hdr_type_grp.create_dataset(attr_name, data=attr_value)
             elif file_hdr_type == "endian_indicator":
                 hdr_type_grp.create_dataset('endian_indicator', data=parsed_data.file_hdr.endian_indicator)
-        
-        #print('Parsing Detector Headers...')
+        if use_test_parse:
+            print(f'Done.\nParsing detector headers...')
         for det_data_type in parsed_data.detector_hdr:
-            det_type_grp = detector_hdr_grp.create_group(f'{det_data_type}')
-            det_hdr_list.append(det_type_grp)
             if det_data_type == 'header_number':
-                det_type_grp.create_dataset('header_number', data=parsed_data.detector_hdr.header_number)
+                detector_hdr_grp.create_dataset('header_number', data=parsed_data.detector_hdr.header_number)
             elif det_data_type == 'config_record_len':
-                det_type_grp.create_dataset('config_record_len', data=parsed_data.detector_hdr.config_record_len)
+                detector_hdr_grp.create_dataset('config_record_len', data=parsed_data.detector_hdr.config_record_len)
             elif det_data_type == 'repeat_value':
-                det_type_grp.create_dataset('repeat_value', data=parsed_data.detector_hdr.repeat_value)
+                detector_hdr_grp.create_dataset('repeat_value', data=parsed_data.detector_hdr.repeat_value)
 
 
         # hdrs contains an array of charge and phonon headers
-        hdrs_grp           = f.create_group('hdrs')
+        hdrs_grp           = output_f.create_group('hdrs')
         charge_config_grp  = hdrs_grp.create_group('charge_config')
         phonon_config_grp  = hdrs_grp.create_group('phonon_config')
         hdrs_array         = []
@@ -440,7 +442,8 @@ def parse_file(input_path, output_path, use_test_parse=True):
         phonon_hdr_count = 0
 
         # Create groups for each header and populate them with relevant datasets
-        #print('Creating header groups...')
+        if use_test_parse:
+            print(f'Done.\nCreating charge and phonon header groups...')
         for i, header in enumerate(parsed_data.hdrs):
             # Collecting charge_config data
             if header.header_number == 0x10002:
@@ -483,7 +486,7 @@ def parse_file(input_path, output_path, use_test_parse=True):
         }
 
         # Creating groups that can hold each event's records
-        logical_rcrd_grp       = f.create_group('logical_rcrds')
+        logical_rcrd_grp       = output_f.create_group('logical_rcrds')
         event_hdr_grp          = logical_rcrd_grp.create_group('event_hdr')
         admin_rcrd_grp         = logical_rcrd_grp.create_group('admin_rcrd')
         trigger_rcrd_grp       = logical_rcrd_grp.create_group('trigger_rcrd')
@@ -537,7 +540,8 @@ def parse_file(input_path, output_path, use_test_parse=True):
         group_counters = {}
 
         # Create a group with the series number to store trace and event data
-        #print('Finding series number...')
+        if use_test_parse:
+            print(f'Done.\nFinding series number...')
         for record_option in parsed_data.logical_rcrds:
             for value, type in logical_record_options.items():
                 if record_option.next_section.next_header == value:
@@ -545,39 +549,45 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         series_number_1 = record_option.next_section.section.series_number_1
                         series_number_2 = record_option.next_section.section.series_number_2
                         series_number = f'{series_number_1}{series_number_2}'
-        series_grp = f.create_group(f'S{series_number}')
-        #print(f'Series number: {series_number}')
+        series_grp = output_f.create_group(f'S{series_number}')
+        if use_test_parse:
+            print(f'Series number: {series_number}')
 
         # Loop through all of the Structs in logical_rcrds
-        #print('Parsing Logical Records...')
+        if use_test_parse:
+            print(f'Parsing logical records...')
         for i, record_option in enumerate(parsed_data.logical_rcrds):
             # Handle event headers separately
             if (record_option.next_section.next_header >> 16) == 0xA980:
-                #print()
-                #print('Event Headers...')
                 # Storing event_hdr data
                 events = []
                 # Loop through attributes of event_hdr and store them in event_hdr_grp_i
                 event_hdr_grp_i = event_hdr_grp.create_group(f'event_group_{event_count}')
                 event_count += 1
-                for attr_name in ['event_header_word', 'event_size', 'event_identifier',
-                                'event_class', 'event_category', 'event_type']:
+                # Skip event_header_word and event_identifier
+                # Identifier is identical for each event, and header_word
+                # is split for other information
+                if use_test_parse:
+                    print('Event header data:')
+                for attr_name in ['event_size', 'event_class', 'event_category', 'event_type']:
                     if hasattr(record_option.next_section.section, attr_name):
                         attr_value = getattr(record_option.next_section.section, attr_name)
                         event_data = event_hdr_grp_i.create_dataset(attr_name, data=attr_value)
                         events.append(event_data)
+                        if use_test_parse:
+                            print(f'{attr_name}: {attr_value}')
                 event_hdr_array.append(events)
             
             # Iterate through the options in logical_rcrds using the type dictionary
             for value, type in logical_record_options.items():
                 if record_option.next_section.next_header == value:
                     if type == 'admin_rcrd':
-                        #print('Admin records...')
                         # Store admin_rcrd data in an array
                         admins = []
                         admin_group_i = admin_rcrd_grp.create_group(f'{type}_group_{admin_count}')
-                        #print(admin_group_i)
                         admin_count += 1
+                        if use_test_parse:
+                            print(f'\nAdministrative record data:')
                         for attr_name in ['admin_header', 'admin_len', 'series_number_1', 'series_number_2',
                                         'event_number_in_series', 'seconds_from_epoch', 'time_from_last_event',
                                         'live_time_from_last_event']:
@@ -585,71 +595,77 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 admin_data = admin_group_i.create_dataset(attr_name, data=attr_value)
                                 admins.append(admin_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each admin_rcrd data array in higher level array
                         admin_rcrd_array.append(admins)
 
+                        # Create separate subgroup for series to hold event information
                         event_number_i = record_option.next_section.section.event_number_in_series
                         event_grp_i = series_grp.create_group(f'E{event_number_i}')
                         event_set.add(event_number_i)
-                        #print(f'Event number: {event_number_i}')
                 
                     if type == 'trigger_rcrd':
-                        #print('Trigger records...')
                         # Store trigger_rcrd data in an array
                         triggers = []
                         trigger_group_i = trigger_rcrd_grp.create_group(f'{type}_group_{trigger_count}')
                         trigger_count += 1
+                        if use_test_parse:
+                            print(f'\nTrigger record data:')
                         for attr_name in ['trigger_header', 'trigger_len', 'trigger_time', 'individual_trigger_masks']:
                             if hasattr(record_option.next_section.section, attr_name):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 trigger_data = trigger_group_i.create_dataset(attr_name, data=attr_value)
                                 triggers.append(trigger_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each trigger_rcrd array in higher level array
                         trigger_rcrd_array.append(triggers)
 
                     if  type == 'tlb_trigger_mask_rcrd':
-                        #print('tlb trigger mask records...')
                         # Store tlb_trigger_mask_rcrd data in an array
                         tlb_trig_mask = []
                         tlb_trig_group_i = tlb_trig_mask_rcrd_grp.create_group(f'{type}_group_{tlb_count}')
                         tlb_count += 1
+                        if use_test_parse:
+                                    print(f'\nTlb trigger mask record data:')
                         for attr_name in ['tlb_mask_header', 'tlb_len', 'tower_mask']:
                             if hasattr(record_option.next_section.section, attr_name):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 tlb_trig_data = tlb_trig_group_i.create_dataset(attr_name, data=attr_value)
                                 tlb_trig_mask.append(tlb_trig_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each array in higher level array
                         tlb_trig_mask_rcrd_array.append(tlb_trig_mask)
 
                     if type == 'gps_data':
-                        #print('gps data...')
                         # Storing gps_data in array
                         gps = []
                         # Loop through attributes of gps_data and store them in gps_data_group_i
                         gps_data_group_i = gps_data_grp.create_group(f'{type}_group_{gps_count}')
                         gps_count += 1
-                        # If length = 0, only tlb_mask_header and length have values
-                        if record_option.next_section.section.length == 0:
-                            for attr_name in ['tlb_mask_header', 'length']:
-                                if hasattr(record_option.next_section.section, attr_name):
-                                    attr_value = getattr(record_option.next_section.section, attr_name)
-                                    gps_dataset = gps_data_group_i.create_dataset(attr_name, data=attr_value)
-                                    gps.append(gps_dataset)
-                        else:
-                            for attr_name in ['tlb_mask_header', 'length', 'gps_year_day', 'gps_status_hour_minute',
-                                            'gps_microsecs_from_gps_second']:
-                                if hasattr(record_option.next_section.section, attr_name):
-                                    attr_value = getattr(record_option.next_section.section, attr_name)
-                                    gps_dataset = gps_data_group_i.create_dataset(attr_name, data=attr_value)
-                                    gps.append(gps_dataset)
+                        if use_test_parse:
+                                    print(f'\nGPS data:')
+                        #gps_data has a variable number of attributes depending on length value
+                        attributes = ['tlb_mask_header', 'length']
+                        if record_option.next_section.section.length != 0:
+                            attributes.extend(['gps_year_day', 'gps_status_hour_minute_second', 'gps_microsecs_from_gps_second'])
+                        for attr_name in attributes:
+                            if hasattr(record_option.next_section.section, attr_name):
+                                attr_value = getattr(record_option.next_section.section, attr_name)
+                                gps_dataset = gps_data_group_i.create_dataset(attr_name, data=attr_value)
+                                gps.append(gps_dataset)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store gps array in higher level array
                         gps_data_array.append(gps)
 
                     # trace_data contains the actual data samples taken by the detector
                     # As well as the header information describing the events and detectors
                     if type == "trace_data":
-                        #print()
-                        #print('Parsing trace data..')
+                        if use_test_parse:
+                            print(f'\nTrace data:')
                         if record_option.next_section.section.trace_rcrds:
                             trace_record_group_i = trace_data_grp.create_group(f'{type}_group_{trace_count}')
                             #trace_record_group_i = event_grp_i.create_group(f'{type}_group_{trace_count}')
@@ -664,8 +680,9 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                     attr_value = getattr(record_option.next_section.section.trace_rcrds, attr_name)
                                     trace_rcrd_dataset = trace_record_group_i.create_dataset(attr_name, data=attr_value)
                                     trace_rcrd.append(trace_rcrd_dataset)
+                                    if use_test_parse:
+                                        print(f'{attr_name}: {attr_value}')
                             # Store each trace_rcrd array in higher level array
-                            #print(f'Trace record data parsed for group {trace_count}')
                             trace_data_array.append(trace_rcrd)
 
                         if record_option.next_section.section.sample_data:
@@ -679,7 +696,6 @@ def parse_file(input_path, output_path, use_test_parse=True):
                             detector_code = record_option.next_section.section.trace_rcrds.detector_code
                             detector_code_set.add(detector_code)
                             det_type, charge, phonon, veto, error, detector_number = get_detector_code_info(int(detector_code))
-                            #print('Sorting trace data into charge, phonon, veto, and error groups...')
                             
                             detector_type_set.add(det_type)
                             detector_number_set.add(detector_number)
@@ -691,20 +707,16 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                 group_counters[det_group_name] = 0
 
                             trace_group_count = group_counters[det_group_name]
-                            #print(f'Trace group count: {trace_group_count}')
 
                             if det_group_name in event_grp_i:
-                                #print(f'Group {det_group_name} exists. Adding data...')
                                 detector_group = event_grp_i[det_group_name]
 
                                 trace_dataset_name = f'trace_{trace_group_count}'
                                 if trace_dataset_name not in detector_group:
                                     detector_group.create_dataset(trace_dataset_name, data=trace)
-                                    #print('Data added...')
                             
                             else:
                                 try:
-                                    #print(f'Group {det_group_name} does not exist. Creating data...')
                                     detector_group = event_grp_i.create_group(f'{det_group_name}')
                                     if 'detector_type' not in detector_group:
                                         detector_group.create_dataset(f'detector_type', data=f'{det_type}')
@@ -727,7 +739,6 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                         type = 'Error'
                                         error_array.append(trace)
                                         error_set.add(len(trace))
-                                    #print(f'Sorted into type: {type}')
                                     
                                     detector_group.create_dataset(f'trace', data=trace)
                                     group_counters[det_group_name] += 1
@@ -742,6 +753,8 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         soudan_buffer = []
                         soudan_buffer_group_i = soudan_buffer_grp.create_group(f'{type}_group_{soudan_count}')
                         soudan_count += 1
+                        if use_test_parse:
+                            print(f'\nSoudan history buffer data:')
                         for attr_name in ['history_buffer_header', 'history_buffer_len', 'num_time_nvt', 'time_nvt',
                               'num_veto_mask_words', 'time_n_minus_veto_mask', 'num_trigger_times', 
                               'trigger_times', 'num_trigger_mask_words', 'trig_times_minus_trig_mask']:
@@ -749,6 +762,8 @@ def parse_file(input_path, output_path, use_test_parse=True):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 soudan_buffer_data = soudan_buffer_group_i.create_dataset(attr_name, data=attr_value)
                                 soudan_buffer.append(soudan_buffer_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each soudan_history_buffer array in higher level array
                         soudan_buffer_array.append(soudan_buffer)
 
@@ -757,12 +772,16 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         detector = []
                         detector_group_i = detector_trig_grp.create_group(f'{type}_group_{detector_count}')
                         detector_count += 1
+                        if use_test_parse:
+                            print(f'\nDetector trigger rates data:')
                         for attr_name in ['detector_trigger_header', 'len_to_next_header', 'clocking_interval',
                                           'tower_number', 'detector_codes', 'j_codes', 'counter_values']:
                             if hasattr(record_option.next_section.section, attr_name):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 detector_trig_data = detector_group_i.create_dataset(attr_name, data=attr_value)
                                 detector.append(detector_trig_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each detector_trigger_rate in a higher level array
                         detector_trig_array.append(detector)
                         
@@ -771,11 +790,31 @@ def parse_file(input_path, output_path, use_test_parse=True):
                         veto = []
                         veto_group_i = veto_trig_grp.create_group(f'{type}_group_{veto_count}')
                         veto_count += 1
+                        if use_test_parse:
+                            print(f'\nVeto trigger rates data:')
                         for attr_name in ['veto_trigger_header', 'len_to_next_header', 'clocking_interval',
                                           'num_entries', 'detector_code', 'counter_value_det_code']:
                             if hasattr(record_option.next_section.section, attr_name):
                                 attr_value = getattr(record_option.next_section.section, attr_name)
                                 veto_trig_data = veto_group_i.create_dataset(attr_name, data=attr_value)
                                 veto.append(veto_trig_data)
+                                if use_test_parse:
+                                    print(f'{attr_name}: {attr_value}')
                         # Store each veto array in higher level array
                         veto_trig_array.append(veto)
+
+        if use_test_parse:
+            # Print data about the arrays and their values
+            print(f'\nDetector type set:     {detector_type_set}')
+            print(f'Unique detector codes: {len(detector_code_set)}')
+            print(f'Unique detector nums:  {len(detector_number_set)}')
+            print(f'Trace length set:      {trace_set}')
+            print(f'Charge length set:     {charge_set}')
+            print(f'Phonon length set:     {phonon_set}')
+            print(f'Error length set:      {error_set}')
+            print(f'Veto length set:       {veto_set}')
+            print(f'Num Events:            {len(event_set)}')
+            print(f'Charge array len:      {len(charge_pulse_array)}')
+            print(f'Phonon array len:      {len(phonon_pulse_array)}')
+            print(f'Veto array len:        {len(veto_array)}')
+            print(f'Error array len:       {len(error_array)}')

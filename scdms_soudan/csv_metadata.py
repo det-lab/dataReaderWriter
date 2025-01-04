@@ -115,13 +115,13 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
                 detector_type_counts[det_type][trace_type] += 1
             
             # print how many of each type of channel is in a detector type
-            #for det_type, trace_counts in detector_type_counts.items():
-            #    charge_count = trace_counts.get('Charge', 0)
-            #    phonon_count = trace_counts.get('Phonon', 0)
-            #    veto_count = trace_counts.get('Veto', 0)
-            #    error_count = trace_counts.get('Error', 0)
-            #    print(f'{det_type} detector type has:\n{charge_count} charge channels,\n{phonon_count} phonon channels,\n{veto_count} veto channels,\nand {error_count} error channels.')
-            #    print()
+            for det_type, trace_counts in detector_type_counts.items():
+                charge_count = trace_counts.get('Charge', 0)
+                phonon_count = trace_counts.get('Phonon', 0)
+                veto_count = trace_counts.get('Veto', 0)
+                error_count = trace_counts.get('Error', 0)
+                print(f'{det_type} detector type has:\n{charge_count} charge channels,\n{phonon_count} phonon channels,\n{veto_count} veto channels,\nand {error_count} error channels.')
+                print()
 
             detector_info_group = trace_out_f.create_group('detector_lists')
             detector_info_group.create_dataset('charge_detectors', data=list(charge_detector_set))
@@ -301,10 +301,10 @@ def find_valid_series_events(cut_data_file_path, cdms_ids_file_path, is_test=Tru
 #parsed_hdf5_file_path = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
 #trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
 #cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
-
-cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
-valid_pairs = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=False)
-
+#
+#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
+#valid, invalid = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=False)
+#
 #series_number, event_numbers = metadata.get_series_and_event_numbers(parsed_hdf5_file_path)
 #event_number = event_numbers[3]
 #print(f'Range of event numbers in file: {event_numbers[0]} to {event_numbers[-1]}')
