@@ -2,15 +2,12 @@ import h5py
 import pandas as pd
 import os
 import re
-import sys
 from collections import defaultdict
 import matplotlib.pyplot as plt
 import numpy as np
 # Suppress unneccessary 3D package warning
 import warnings
 warnings.filterwarnings('ignore', message='Unable to import Axes3D')
-sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/')
-import metadata
 print('Imports successful')
 
 # Load cdms id file
@@ -26,8 +23,30 @@ for file in os.listdir(directory):
 
 print('File list created')
 
+def get_series_num(parsed_hdf5_file_path):
+    with h5py.File(parsed_hdf5_file_path, 'r') as f:
+        series_pattern = r'S(\d+)'
+        for group_name in f:
+            series_match = re.match(series_pattern, group_name)
+            if series_match:
+                series_number = series_match.group(1)
+    return series_number
+
+def get_series_and_event_numbers(parsed_hdf5_file_path):
+    event_numbers = []
+    with h5py.File(parsed_hdf5_file_path, 'r') as f:
+        event_pattern = r'E(\d+)'
+        series_number = get_series_num(parsed_hdf5_file_path)
+        series_group = f[f'S{series_number}']
+        for group_name in series_group:
+            event_match = re.match(event_pattern, group_name)
+            if event_match:
+                event_number = event_match.group(1)
+                event_numbers.append(event_number)
+    return series_number, event_numbers
+
 # Use original .csv files instead of constructed hdf5 file
-def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
+def get_single_event_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
     """
     Create two hdf5 files containing the cut data information and trace data information
     from a given parsed data file.
@@ -45,7 +64,7 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
     cdms_ids = cdms_ids.drop('series-event', axis=1)
     
     print('File loaded.')
-    series_number = metadata.get_series_num(parsed_hdf5_file)
+    series_number = get_series_num(parsed_hdf5_file)
     # Find the index of the given event
     se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
     se_index = se_index[0]
@@ -73,7 +92,8 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
         # Write the trace_data to trace_output_file_path
         with h5py.File(trace_output_file_path, 'w') as trace_out_f:
             print('Creating trace output file...')
-            series_group = trace_out_f.create_group(f'S{series_number}')
+            uid_group = trace_out_f.create_group('UID')
+            series_group = uid_group.create_group(f'S{series_number}')
             event_group = series_group.create_group(f'E{event_number}')
             for detector_group in detector_groups:
                 # Grab detector code
@@ -123,7 +143,7 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
                 print(f'{det_type} detector type has:\n{charge_count} charge channels,\n{phonon_count} phonon channels,\n{veto_count} veto channels,\nand {error_count} error channels.')
                 print()
 
-            detector_info_group = trace_out_f.create_group('detector_lists')
+            detector_info_group = series_group.create_group('detector_lists')
             detector_info_group.create_dataset('charge_detectors', data=list(charge_detector_set))
             detector_info_group.create_dataset('phonon_detectors', data=list(phonon_detector_set))
             detector_info_group.create_dataset('veto_detectors', data=list(veto_detector_set))
@@ -170,7 +190,8 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
     with h5py.File(cut_output_file_path, 'w') as cut_f:
         print('Creating cut output file...')
         id_group = cut_f.create_group('UID')
-        series_group = id_group.create_group(series_number)
+        series_group = id_group.create_group(f'S{series_number}')
+        event_group = series_group.create_group(f'E{event_number}')
         for file in file_names:
             # skip these files
             if file in ['ID_CDMSliteR3_small.csv', 'README.md']:
@@ -214,8 +235,8 @@ def get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_o
                 value_at_index = cut_data_df.iloc[se_index].item()
                 #print(f'Creating group: {group_name}')
                 try:
-                    cut_group = series_group.create_group(group_name)
-                    cut_group.create_dataset('bool', data=value_at_index)
+                    cut_group = event_group.create_group(group_name)
+                    cut_group.create_dataset(f'bool', data=value_at_index)
                 except Exception as e:
                     print(f'Error creating group: {group_name}\n{e}')
 
@@ -305,7 +326,7 @@ def find_valid_series_events(cut_data_file_path, cdms_ids_file_path, is_test=Tru
 #cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
 #valid, invalid = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=False)
 #
-#series_number, event_numbers = metadata.get_series_and_event_numbers(parsed_hdf5_file_path)
+#series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file_path)
 #event_number = event_numbers[3]
 #print(f'Range of event numbers in file: {event_numbers[0]} to {event_numbers[-1]}')
 #get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file_path, trace_output_file_path, cut_output_file_path, is_test=False)
