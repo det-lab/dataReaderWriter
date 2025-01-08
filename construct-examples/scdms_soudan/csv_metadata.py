@@ -23,6 +23,14 @@ for file in os.listdir(directory):
 
 print('File list created')
 
+def load_id_file(cdms_ids_file_path):
+    cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
+    # split series-event column into 'series_number' and 'event_number'
+    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
+    # drop redundant column
+    cdms_ids = cdms_ids.drop('series-event', axis=1)
+    return cdms_ids
+
 def get_series_num(parsed_hdf5_file_path):
     with h5py.File(parsed_hdf5_file_path, 'r') as f:
         series_pattern = r'S(\d+)'
@@ -46,30 +54,11 @@ def get_series_and_event_numbers(parsed_hdf5_file_path):
     return series_number, event_numbers
 
 # Use original .csv files instead of constructed hdf5 file
-def get_single_event_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
+def get_single_event_metadata(event_number, cdms_ids, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
     """
     Create two hdf5 files containing the cut data information and trace data information
     from a given parsed data file.
     """
-    print('Loading CDMS ID file...')
-    if is_test:
-        #Only use the first 10 lines for testing
-        cdms_ids = pd.read_csv(cdms_ids_file_path, header=None, names = ['index', 'series-event']).head(10)
-    else:
-        cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
-    
-    # split series-event column into 'series_number' and 'event_number'
-    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
-    # drop redundant column
-    cdms_ids = cdms_ids.drop('series-event', axis=1)
-    
-    print('File loaded.')
-    series_number = get_series_num(parsed_hdf5_file)
-    # Find the index of the given event
-    se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
-    se_index = se_index[0]
-    print(f'Series number: {series_number}')
-    print(f'Series/Event index: {se_index}')
     # load trace data
     with h5py.File(parsed_hdf5_file, 'r') as parsed_f:
         print('Reading input hdf5 file...')
@@ -184,7 +173,15 @@ def get_single_event_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file
     except Exception as e:
         print(f'Error plotting data:\n{e}')
     
-    print('Trace output file created.')
+    if is_test:
+        #Only use the first 10 lines for testing
+        cdms_ids = cdms_ids.head(10)
+    series_number = get_series_num(parsed_hdf5_file)
+    # Find the index of the given event
+    se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
+    se_index = se_index[0]
+    print(f'Series number: {series_number}')
+    print(f'Series/Event index: {se_index}')
 
     # Use csv files to create an hdf5 cut_file
     with h5py.File(cut_output_file_path, 'w') as cut_f:
@@ -244,22 +241,123 @@ def get_single_event_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file
                     print(f'Group: {group_name} Value: {value_at_index}')
         print('Cut output file created.')
 
-def find_valid_series_events(cut_data_file_path, cdms_ids_file_path, is_test=True):
+def get_event_trace_data(parsed_hdf5_file_path, series_number, event_number):
+    """"
+    Collect trace data for a given series event.
+    """
+    base_path = f'S{series_number}/E{event_number}/'
+    det_code_dict = {}
+    with h5py.File(parsed_hdf5_file_path, "r") as parsed_f:
+        base_group = parsed_f[base_path]
+        for detector_group in base_group.keys():
+            try:
+                detector_data_path = f'{base_path}{detector_group}'
+                detector_data = parsed_f[detector_data_path]
+                for det_data_group_name in detector_data.keys():
+                    det_code_dict[det_data_group_name] = detector_data[det_data_group_name][()]
+            except Exception as e:
+                print(f'Error copying group {detector_group}:\n{e}')
+    
+    return det_code_dict
+
+def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number):
+    """
+    Find bool value for series event in a cut data file.
+    """
+    se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
+    se_index = se_index[0]
+    # Load cut_data_file
+    cut_data = pd.read_csv(cut_data_file, header=None, names=['bool value'])
+    cut_data = cut_data.astype(bool)
+    # Match index on cut_data_file
+    value_at_event = cut_data.iloc[se_index].item()
+
+    return value_at_event
+
+def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=True):
+    """
+    Use all parsed files in a folder to generate cut and trace outputs
+    for every event in the series.
+    """
+    with h5py.File(trace_output_file_path, 'w') as trace_out:
+        uid_group = trace_out.create_group('UID')
+        for parsed_file in os.listdir(parsed_file_folder):
+            parsed_file = os.path.join(parsed_file_folder, parsed_file)
+            if parsed_file.endswith('_parsed.hdf5'):
+                series_number, event_numbers = get_series_and_event_numbers(parsed_file)
+                if is_test:
+                    event_numbers = event_numbers[:10]
+                    print(f'Event numbers: {event_numbers}')
+                series_group = uid_group.create_group(f"S{series_number}")
+                for event_number in event_numbers:
+                    try:
+                        event_group = series_group.create_group(f'E{event_number}')
+                        det_code_dict = get_event_trace_data(parsed_file, series_number, event_number)
+                        for dataset_name, data in det_code_dict.items():
+                            event_group.create_dataset(dataset_name, data=data)
+                    except Exception as e:
+                        print(f'Error generating trace output for event {event_number}:\n{e}')
+        print(f'Completed collecting trace data for series: {series_number}.')
+
+    if is_test:
+        #Only use the first 10 lines for testing
+        cdms_ids = cdms_ids.head(10)
+    with h5py.File(cut_output_file_path, 'w') as cut_out:
+        print(f'Collecting cut data...')
+        uid_group = cut_out.create_group('UID')
+        for parsed_file in os.listdir(parsed_file_folder):
+            if parsed_file.endswith('_parsed.hdf5'):
+                try:
+                    parsed_file = os.path.join(parsed_file_folder, parsed_file)
+                    series_number, event_numbers = get_series_and_event_numbers(parsed_file)
+                    series_group = uid_group.create_group(f'S{series_number}')
+                except Exception as e:
+                    print(f'Error getting series and event numbers:\n{e}')
+                if is_test:
+                    event_numbers = event_numbers[:10]
+                for event_number in event_numbers:
+                    event_group = series_group.create_group(f'E{event_number}')
+                    for cut_file in os.listdir(cut_data_csv_folder):
+                        if '_small' in cut_file:
+                            continue
+                        if '.csv' not in cut_file:
+                            continue
+                        cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+                        try:
+                            value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+                            event_group.create_dataset(cut_file, data=value_at_event)
+                        except Exception as e:
+                            print(f'Error saving {cut_file} for event {event_number}:\n{e}')
+
+        print(f'Completed collecting cut data for series: {series_number}')
+
+print('Testing fetch_event_cut_data...')
+print('Loading ID file...')
+cdms_ids = load_id_file(cdms_ids_file_path)
+print(f'ID file loaded.')
+
+#parsed_hdf5_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/01150212_1819_F0001_parsed.hdf5'
+print(f'Testing get_series_full_metadata')
+parsed_file_folder = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/'
+cut_data_csv_folder = '/data3/afisher/cdmslite-run3-cuts-output/'
+trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/full_series_trace_test.hdf5'
+cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/full_series_cut_test.hdf5'
+get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=True)
+
+def find_overlapping_bool(true_list, false_list, full_cut_path, full_trace_path):
+    """
+    Querie for series/events on cut bools.
+    """
+    pass
+
+def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=True):
     """
     Given a .csv cut data file, return two dictionaries,
     one of True series-event pairs and another of False series-event pairs
     """
-    print('Loading CDMS ID file...')
     if is_test:
         #Only use the first 10 lines for testing
-        cdms_ids = pd.read_csv(cdms_ids_file_path, header=None, names = ['index', 'series-event']).head(10)
-    else:
-        cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
-    
-    # split series-event column into 'series_number' and 'event_number'
-    cdms_ids[['series_number', 'event_number']] = cdms_ids['series-event'].str.split('-', expand = True)
-    # drop redundant column
-    cdms_ids = cdms_ids.drop('series-event', axis=1)
+        cdms_ids = cdms_ids.head(10)
     
     print('File loaded.')
 
@@ -323,9 +421,10 @@ def find_valid_series_events(cut_data_file_path, cdms_ids_file_path, is_test=Tru
 #trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
 #cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
 #
+#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/cut_output_bg-restricted_Random_CDMSliteR3.csv'
+#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/cut_output_bg-restricted_IsGlitch_trig_CDMSliteR3.csv'
 #cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
-#valid, invalid = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=False)
-#
+#valid, invalid = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=True)
 #series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file_path)
 #event_number = event_numbers[3]
 #print(f'Range of event numbers in file: {event_numbers[0]} to {event_numbers[-1]}')
