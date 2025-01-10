@@ -9,20 +9,6 @@ from functools import reduce
 # Suppress unneccessary 3D package warning
 import warnings
 warnings.filterwarnings('ignore', message='Unable to import Axes3D')
-print('Imports successful')
-
-# Load cdms id file
-directory = '/data3/afisher/cdmslite-run3-cuts-output/'
-cdms_ids_file_path = directory+'ID_CDMSliteR3.csv'
-
-# Create list of file names for use in group creation
-file_names = []
-
-for file in os.listdir(directory):
-    if os.path.isfile(os.path.join(directory, file)):
-        file_names.append(file)
-
-print('File list created')
 
 def load_id_file(cdms_ids_file_path):
     cdms_ids = pd.read_csv(cdms_ids_file_path, header = None, names = ['index', 'series-event'])
@@ -31,10 +17,6 @@ def load_id_file(cdms_ids_file_path):
     # drop redundant column
     cdms_ids = cdms_ids.drop('series-event', axis=1)
     return cdms_ids
-
-print('Loading ID file...')
-cdms_ids = load_id_file(cdms_ids_file_path)
-print(f'ID file loaded.')
 
 def get_series_num(parsed_hdf5_file_path):
     with h5py.File(parsed_hdf5_file_path, 'r') as f:
@@ -81,7 +63,7 @@ def get_event_trace_data(parsed_hdf5_file_path, series_number, event_number):
     
     return det_code_dict
 
-def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number):
+def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number, is_test=False):
     """
     Find bool value for series event in a cut data file.
     """
@@ -90,18 +72,23 @@ def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number):
     # Load cut_data_file
     cut_data = pd.read_csv(cut_data_file, header=None, names=['bool value'])
     cut_data = cut_data.astype(bool)
+    if is_test:
+        cut_data = cut_data.head(10)
     # Match index on cut_data_file
-    value_at_event = cut_data.iloc[se_index].item()
+    try:
+        value_at_event = cut_data.iloc[se_index].item()
+    except:
+        value_at_event = None
 
     return value_at_event
 
-# Use original .csv files instead of constructed hdf5 file
-def get_single_event_metadata(cdms_ids, series_number, event_number, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=True):
+def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
     """
     Create two hdf5 files containing the cut data information and trace data information
     from a given parsed data file.
     """
     # load trace data
+    series_number = get_series_num(parsed_hdf5_file)
     with h5py.File(parsed_hdf5_file, 'r') as parsed_f:
         print('Reading input hdf5 file...')
         series_group = parsed_f[f'S{series_number}']
@@ -230,70 +217,29 @@ def get_single_event_metadata(cdms_ids, series_number, event_number, parsed_hdf5
     # Use csv files to create an hdf5 cut_file
     with h5py.File(cut_output_file_path, 'w') as cut_f:
         print('Creating cut output file...')
-        id_group = cut_f.create_group('UID')
-        series_group = id_group.create_group(f'S{series_number}')
+        uid_group = cut_f.create_group('UID')
+        series_group = uid_group.create_group(f'S{series_number}')
         event_group = series_group.create_group(f'E{event_number}')
-        for file in file_names:
-            # skip these files
-            if file in ['ID_CDMSliteR3_small.csv', 'README.md']:
-                    continue
-            group_name = None
-            if is_test:
-                try:
-                    if '_small' not in file:
-                        continue
-                    group_name = file[:-4]
-                except Exception as e:
-                    print(f'Error creating group:\n{e}')
-                    return
-            
-            else:
-                try:
-                    # skip test files
-                    if "_small" in file:
-                        continue
-                    group_name = file[:-4] # remove .csv from file name
-
-                except Exception as e:
-                    print(f'Error creating group:\n{e}')
-                    return
-            if group_name:
+        for cut_file in os.listdir(cut_data_csv_folder):
+            if '_small' in cut_file:
+                continue
+            if '.csv' not in cut_file:
+                continue
+            cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            try:
+                cut_file = cut_file[:-4] # cut off .csv for naming
                 if is_test:
-                    print(f'Group {group_name} created.')
-                    
-                # if creating group_name succeeds, open file and get value at index
-                file_path = os.path.join(directory, file)
-                if is_test:
-                    print(f'Adding data from: {file_path}')
-
-                cut_data_df = pd.read_csv(file_path, header=None, names=['bool value'])
-                # convert to boolean
-                cut_data_df = cut_data_df.astype(bool)
-                if is_test:
-                    print(f'{group_name} head:\n{cut_data_df.head().to_string(index=False)}')
-
-                # store value at series/event index
-                value_at_index = cut_data_df.iloc[se_index].item()
-                #print(f'Creating group: {group_name}')
-                try:
-                    cut_group = event_group.create_group(group_name)
-                    cut_group.create_dataset(f'bool', data=value_at_index)
-                except Exception as e:
-                    print(f'Error creating group: {group_name}\n{e}')
-
-                if is_test:
-                    print(f'Group: {group_name} Value: {value_at_index}')
+                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=True)
+                else:
+                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=False)
+                event_group.create_dataset(cut_file, data=value_at_event)
+            except Exception as e:
+                value_at_event = None
+                event_group.create_dataset(cut_file, data='Null')
+                #print(f'Error saving {cut_file} for event {event_number}:\n{e}')
         print('Cut output file created.')
 
-#print(f'Testing get_single_event_metadata')
-#parsed_hdf5_file = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
-#series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file)
-#event_number = event_numbers[0]
-#trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/single_event_trace_test.hdf5'
-#cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/single_event_cut_test.hdf5'
-#get_single_event_metadata(cdms_ids, series_number, event_number, parsed_hdf5_file, trace_output_file_path, cut_output_file_path, is_test=False)
-
-def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=True):
+def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
     """
     Use all parsed files in a folder to generate cut and trace outputs
     for every event in the series.
@@ -309,22 +255,22 @@ def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, 
             # Skip folders
             if not os.path.isfile(os.path.join(parsed_file_folder, parsed_file)):
                 continue
-
-            parsed_file = os.path.join(parsed_file_folder, parsed_file)
-
+            
             if parsed_file.endswith('_parsed.hdf5'):
+                parsed_file = os.path.join(parsed_file_folder, parsed_file)
                 series_number, event_numbers = get_series_and_event_numbers(parsed_file)
                 if not series_group_created:
                     series_group = uid_group.create_group(f"S{series_number}")
                     series_group_created = True
                 
                 if is_test:
-                    event_numbers = event_numbers[:10]
-                    print(f'Event numbers: {event_numbers}')
+                    event_numbers = event_numbers[:9]
+                    #print(f'Event numbers: {event_numbers}')
 
                 for event_number in event_numbers:
                     try:
                         event_group = series_group.create_group(f'E{event_number}')
+
                         det_code_dict = get_event_trace_data(parsed_file, series_number, event_number)
                         
                         for det_code, datasets in det_code_dict.items():
@@ -335,7 +281,7 @@ def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, 
                     except Exception as e:
                         print(f'Error generating trace output for event {event_number}:\n{e}')
         if is_test:
-            print(f'Completed collecting trace data for series: {series_number}.')
+            print(f'Completed collecting test trace data for series {series_number}.')
 
     if is_test:
         #Only use the first 10 lines for testing
@@ -355,35 +301,38 @@ def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, 
                 except Exception as e:
                     print(f'Error getting series and event numbers:\n{e}')
                 if is_test:
-                    event_numbers = event_numbers[:10]
+                    event_numbers = event_numbers[:9]
                 for event_number in event_numbers:
                     event_group = series_group.create_group(f'E{event_number}')
+                    if is_test:
+                        print(f'Getting event {event_number} cut data...')
+
                     for cut_file in os.listdir(cut_data_csv_folder):
                         if '_small' in cut_file:
+                            continue
+                        if  'ID' in cut_file:
                             continue
                         if '.csv' not in cut_file:
                             continue
                         cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
                         try:
-                            value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+                            if is_test:
+                                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=True)
+                            else:
+                                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=False)
                             event_group.create_dataset(cut_file, data=value_at_event)
-                        except Exception as e:
-                            print(f'Error saving {cut_file} for event {event_number}:\n{e}')
-
+                        except:# Exception as e:
+                            event_group.create_dataset(cut_file, data='Null')
+                            #print(f'Error saving {cut_file} for event {event_number}:\n{e}')
+                    if is_test:
+                        print(f'Data saved.\n')
+            else:
+                continue
+            print(f'Finished {parsed_file}.')
         if is_test:
-            print(f'Completed collecting cut data for series: {series_number}')
+            print(f'Completed collecting test cut data for series {series_number}')
 
-#parsed_hdf5_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/01150212_1819_F0001_parsed.hdf5'
-print(f'Testing get_series_full_metadata...')
-parsed_file_folder = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/'
-cut_data_csv_folder = '/data3/afisher/cdmslite-run3-cuts-output/'
-trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/full_series_trace_test.hdf5'
-cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/full_series_cut_test.hdf5'
-
-#parsed_file_folder = '/data3/afisher/test/parsed_files/'
-get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=True)
-
-def find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, is_test=True):
+def find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, is_test=False):
     """
     Querie for series/events on cut bools by providing lists for true and false cuts.
     """
@@ -437,20 +386,8 @@ def find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, 
     
     selected_rows = cdms_ids.iloc[overlapping_indices]
     print(selected_rows)
-        
-true_list = [
-    'out_bg-restricted_Random_CDMSliteR3.csv',                     # 0-49 ALL TRUE 
-    'out_bg-restricted_IsSpot_CDMSliteR3.csv',                     # 1, 2, 6, 17, 20, 21, 29, 35, 45, 49 TRUE
-    ]
 
-false_list = [
-    'out_bg-restricted_IsBadSeries_CDMSliteR3.csv',                # 0-49 ALL FALSE
-    'cut_output_bg-restricted_GoodPhononStartTime_CDMSliteR3.csv', # 9, 18, 21, 27, 29, 35, 41, 45 FALSE
-    ]
-
-#find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, is_test=False)
-
-def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=True):
+def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=False):
     """
     Given a .csv cut data file, return two dictionaries,
     one of True series-event pairs and another of False series-event pairs
@@ -513,17 +450,3 @@ def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=True):
             print(f"Failed to form invalid series/event lists:\n{e}")
 
     return series_and_true_events, series_and_false_events
-        
-# testing
-#parsed_hdf5_file_path = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
-#trace_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_trace_data_test.hdf5'
-#cut_output_file_path = '/home/afisher@novateur.com/dataReaderWriter/NovateurData/get_cut_data_test.hdf5'
-#
-#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/cut_output_bg-restricted_Random_CDMSliteR3.csv'
-#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/cut_output_bg-restricted_IsGlitch_trig_CDMSliteR3.csv'
-#cut_data_file = '/data3/afisher/cdmslite-run3-cuts-output/out_bg-restricted_IsSquarePulse_CDMSliteR3.csv'
-#valid, invalid = find_valid_series_events(cut_data_file, cdms_ids_file_path, is_test=True)
-#series_number, event_numbers = get_series_and_event_numbers(parsed_hdf5_file_path)
-#event_number = event_numbers[3]
-#print(f'Range of event numbers in file: {event_numbers[0]} to {event_numbers[-1]}')
-#get_csv_metadata(event_number, cdms_ids_file_path, parsed_hdf5_file_path, trace_output_file_path, cut_output_file_path, is_test=False)
