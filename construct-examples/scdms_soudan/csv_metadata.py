@@ -19,6 +19,9 @@ def load_id_file(cdms_ids_file_path):
     return cdms_ids
 
 def get_series_num(parsed_hdf5_file_path):
+    """
+    Find the series number of any parsed hdf5 file.
+    """
     with h5py.File(parsed_hdf5_file_path, 'r') as f:
         series_pattern = r'S(\d+)'
         for group_name in f:
@@ -28,6 +31,9 @@ def get_series_num(parsed_hdf5_file_path):
     return series_number
 
 def get_series_and_event_numbers(parsed_hdf5_file_path):
+    """
+    Collect all event numbers in a given parsed hdf5 file
+    """
     event_numbers = []
     with h5py.File(parsed_hdf5_file_path, 'r') as f:
         event_pattern = r'E(\d+)'
@@ -40,9 +46,9 @@ def get_series_and_event_numbers(parsed_hdf5_file_path):
                 event_numbers.append(event_number)
     return series_number, event_numbers
 
-def get_event_trace_data(parsed_hdf5_file_path, series_number, event_number):
+def get_event_det_code_data(parsed_hdf5_file_path, series_number, event_number):
     """"
-    Collect trace data for a given series event.
+    Create a dictionary of trace data for a given series event.
     """
     base_path = f'S{series_number}/E{event_number}/'
     det_code_dict = {}
@@ -63,17 +69,17 @@ def get_event_trace_data(parsed_hdf5_file_path, series_number, event_number):
     
     return det_code_dict
 
-def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number, is_test=False):
+def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number):
     """
-    Find bool value for series event in a cut data file.
+    Find bool values for all cut data types for a given event.
     """
-    se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
+    se_index = cdms_ids.loc[
+        (cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)
+        ].index
     se_index = se_index[0]
     # Load cut_data_file
     cut_data = pd.read_csv(cut_data_file, header=None, names=['bool value'])
     cut_data = cut_data.astype(bool)
-    if is_test:
-        cut_data = cut_data.head(10)
     # Match index on cut_data_file
     try:
         value_at_event = cut_data.iloc[se_index].item()
@@ -82,162 +88,135 @@ def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number, is_
 
     return value_at_event
 
-def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
+def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file_path, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
     """
-    Create two hdf5 files containing the cut data information and trace data information
-    from a given parsed data file.
+    Create a trace output and cut output file for a single event.
     """
-    # load trace data
-    series_number = get_series_num(parsed_hdf5_file)
-    with h5py.File(parsed_hdf5_file, 'r') as parsed_f:
-        print('Reading input hdf5 file...')
-        series_group = parsed_f[f'S{series_number}']
-        event_group = series_group[f'E{event_number}']
-        detector_groups = [key for key in event_group.keys() if key.startswith('det_code_')]
-        base_path = f'S{series_number}/E{event_number}'
-        charge_traces = []
-        phonon_traces = []
-        veto_traces   = []
-        error_traces  = []
-
-        charge_detector_set = set()
-        phonon_detector_set = set()
-        veto_detector_set   = set()
-        error_detector_set  = set()
-
-        detector_type_counts = defaultdict(lambda: defaultdict(int))
-
-        # Write the trace_data to trace_output_file_path
-        with h5py.File(trace_output_file_path, 'w') as trace_out_f:
-            print('Creating trace output file...')
-            uid_group = trace_out_f.create_group('UID')
-            series_group = uid_group.create_group(f'S{series_number}')
-            event_group = series_group.create_group(f'E{event_number}')
-            for detector_group in detector_groups:
-                # Grab detector code
-                detector_pattern = r'det_code_(\d+)'
-                detector_match = re.match(detector_pattern, detector_group)
-                detector_code = detector_match.group(1)
-
-                # Copy data from parsed hdf5 file to output
-                new_det_group = event_group.create_group(detector_group)
-
-                trace_type_path = f'{base_path}/{detector_group}/trace_type'     
-                trace_type = parsed_f[trace_type_path][()]
-                trace_type = trace_type.decode('utf-8')
-
-                trace_path = f'{base_path}/{detector_group}/trace'
-                trace = parsed_f[trace_path][()]
-
-                det_type_path = f'{base_path}/{detector_group}/detector_type'
-                det_type = parsed_f[det_type_path][()]
-                det_type = det_type.decode('utf-8')
-
-                new_det_group.create_dataset('trace_type', data=trace_type)
-                new_det_group.create_dataset('trace', data=trace)
-                new_det_group.create_dataset('detector_type', data=det_type)
-
-                if trace_type == 'Charge':
-                    charge_traces.append(trace)
-                    charge_detector_set.add(detector_code)
-                elif trace_type =='Phonon':
-                    phonon_traces.append(trace)
-                    phonon_detector_set.add(detector_code)
-                elif trace_type =='Veto':
-                    veto_traces.append(trace)
-                    veto_detector_set.add(detector_code)
-                elif trace_type =='Error':
-                    error_traces.append(trace)
-                    error_detector_set.add(detector_code)
-
-                detector_type_counts[det_type][trace_type] += 1
-            
-            # print how many of each type of channel is in a detector type
-            for det_type, trace_counts in detector_type_counts.items():
-                charge_count = trace_counts.get('Charge', 0)
-                phonon_count = trace_counts.get('Phonon', 0)
-                veto_count = trace_counts.get('Veto', 0)
-                error_count = trace_counts.get('Error', 0)
-                print(f'{det_type} detector type has:\n{charge_count} charge channels,\n{phonon_count} phonon channels,\n{veto_count} veto channels,\nand {error_count} error channels.')
-                print()
-
-            detector_info_group = series_group.create_group('detector_lists')
-            detector_info_group.create_dataset('charge_detectors', data=list(charge_detector_set))
-            detector_info_group.create_dataset('phonon_detectors', data=list(phonon_detector_set))
-            detector_info_group.create_dataset('veto_detectors', data=list(veto_detector_set))
-            detector_info_group.create_dataset('error_detectors', data=list(error_detector_set))
-
-        print(f'Created trace output file.')
-
-    try:
-        for trace in charge_traces:
-            x = np.arange(len(trace))
-            plt.scatter(x, trace, s=1)
-        plt.title(f'Charge traces for event {event_number}')
-        plt.show()
-
-        for trace in phonon_traces:
-            x = np.arange(len(trace))
-            plt.scatter(x, trace, s=1)
-        plt.title(f'Phonon traces for event {event_number}')
-        plt.show()
-
-        for trace in veto_traces:
-            x = np.arange(len(trace))
-            plt.scatter(x, trace, s=1)
-        plt.title(f'Veto traces for event {event_number}')
-        plt.show()
-
-        for trace in error_traces:
-            if len(trace) == 4096:
-                x = np.arange(len(trace))
-                plt.scatter(x, trace, s=1)
-        plt.title(f'Phonon error traces for event {event_number}')
-        plt.show()
-
-        for trace in error_traces:
-            if len(trace) == 2048:
-                x = np.arange(2048)
-                plt.scatter(x, trace, s=1)
-        plt.title(f'Charge error traces for event {event_number}')
-        plt.show()
-    except Exception as e:
-        print(f'Error plotting data:\n{e}')
+    series_number = get_series_num(parsed_hdf5_file_path)
+    with h5py.File(trace_output_file_path, 'w') as trace_out:
+        if is_test:
+            print(f'Collecting trace data..')
+        uid_group = trace_out.create_group('UID')
+        series_group = uid_group.create_group(f'S{series_number}')
+        event_group = series_group.create_group(f'E{event_number}')
+        det_code_dict = get_event_det_code_data(parsed_hdf5_file_path, series_number, event_number)
+        for det_code, datasets in det_code_dict.items():
+            det_code_group = event_group.create_group(det_code)
+            for dataset_name, data in datasets.items():
+                det_code_group.create_dataset(dataset_name, data=data)
+        if is_test:
+            print(f'Trace data saved.')
     
-    if is_test:
-        #Only use the first 10 lines for testing
-        cdms_ids = cdms_ids.head(10)
-    series_number = get_series_num(parsed_hdf5_file)
-    # Find the index of the given event
-    se_index = cdms_ids.loc[(cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)].index
-    se_index = se_index[0]
-    print(f'Series number: {series_number}')
-    print(f'Series/Event index: {se_index}')
-
-    # Use csv files to create an hdf5 cut_file
-    with h5py.File(cut_output_file_path, 'w') as cut_f:
-        print('Creating cut output file...')
-        uid_group = cut_f.create_group('UID')
+    with h5py.File(cut_output_file_path, 'w') as cut_out:
+        if is_test:
+            print(f'Collecting cut data...')
+        uid_group = cut_out.create_group('UID')
         series_group = uid_group.create_group(f'S{series_number}')
         event_group = series_group.create_group(f'E{event_number}')
         for cut_file in os.listdir(cut_data_csv_folder):
-            if '_small' in cut_file:
-                continue
             if '.csv' not in cut_file:
                 continue
+            if 'small' in cut_file:
+                continue
+            if 'ID' in cut_file:
+                continue
+            if is_test:
+                print(f'Fetching for {cut_file}')
+
             cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            data_name = cut_file[:-4] # cut off .csv for naming
             try:
-                cut_file = cut_file[:-4] # cut off .csv for naming
-                if is_test:
-                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=True)
-                else:
-                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=False)
-                event_group.create_dataset(cut_file, data=value_at_event)
+                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+            except:
+                # Saving as None without quotes creates an anonymous dataset
+                value_at_event = 'None'
+            try:
+                event_group.create_dataset(data_name, data=value_at_event)
             except Exception as e:
-                value_at_event = None
-                event_group.create_dataset(cut_file, data='Null')
-                #print(f'Error saving {cut_file} for event {event_number}:\n{e}')
-        print('Cut output file created.')
+                print(f"Error saving cut data for S{series_number}/E{event_number}:\n{e}")
+
+def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=False):
+    """
+    Create a trace output file for all events 
+    available in a folder of parsed hdf5 files.
+    """
+    with h5py.File(trace_output_file_path, 'w') as trace_out:
+        if is_test:
+            print(f'Collecting trace data...')
+        uid_group = trace_out.create_group('UID')
+        series_group_created = False # track if there's already a series_group
+
+        for parsed_file in os.listdir(parsed_file_folder):
+
+            # Skip folders
+            if not os.path.isfile(os.path.join(parsed_file_folder, parsed_file)):
+                continue
+            
+            if parsed_file.endswith('_parsed.hdf5'):
+                parsed_file = os.path.join(parsed_file_folder, parsed_file)
+                series_number, event_numbers = get_series_and_event_numbers(parsed_file)
+                if not series_group_created:
+                    series_group = uid_group.create_group(f"S{series_number}")
+                    series_group_created = True
+                
+                if is_test:
+                    event_numbers = event_numbers[:9]
+                    #print(f'Event numbers: {event_numbers}')
+
+                for event_number in event_numbers:
+                    try:
+                        event_group = series_group.create_group(f'E{event_number}')
+
+                        det_code_dict = get_event_det_code_data(parsed_file, series_number, event_number)
+                        
+                        for det_code, datasets in det_code_dict.items():
+                            det_code_group = event_group.create_group(det_code)
+                            for dataset_name, data in datasets.items():
+                                det_code_group.create_dataset(dataset_name, data=data)
+
+                    except Exception as e:
+                        print(f'Error generating trace output for event {event_number}:\n{e}')
+        if is_test:
+            print(f'Completed collecting test trace data for series {series_number}.')
+
+def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cut_output_file_path, is_test=False):
+    """
+    Create a cut output file for all events 
+    available in a folder of parsed hdf5 files.
+    """
+    # Find series number
+    series_number = get_series_num(parsed_hdf5_file_path)
+    se_indices = cdms_ids.loc[
+        (cdms_ids['series_number'] == series_number)
+    ].index.to_list()
+    if is_test:
+        se_indices = se_indices[:9]
+    with h5py.File(cut_output_file_path, 'w') as cut_out:
+        uid_group = cut_out.create_group('UID')
+        series_group = uid_group.create_group(f'S{series_number}')
+        for cut_file in os.listdir(cut_data_csv_folder):
+            if '.csv' not in cut_file:
+                continue
+            if 'small' in cut_file:
+                continue
+            if 'ID' in cut_file:
+                continue
+            cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            data_name = cut_file[:-4] # cut off .csv for naming
+            for index in se_indices:
+                event_number = cdms_ids.loc[cdms_ids['index'] == index, 'event_number'].values[0]
+                if f'E{event_number}' not in series_group:
+                    event_group = series_group.create_group(f'E{event_number}')
+                else:
+                    event_group = series_group[f'E{event_number}']
+                try:
+                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+                except:
+                    value_at_event = ''
+                try:
+                    event_group.create_dataset(data_name, data=value_at_event)
+                except Exception as e:
+                    print(f'Error saving {data_name} for {event_number}:\n{e}')
 
 def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
     """
@@ -271,7 +250,7 @@ def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, 
                     try:
                         event_group = series_group.create_group(f'E{event_number}')
 
-                        det_code_dict = get_event_trace_data(parsed_file, series_number, event_number)
+                        det_code_dict = get_event_det_code_data(parsed_file, series_number, event_number)
                         
                         for det_code, datasets in det_code_dict.items():
                             det_code_group = event_group.create_group(det_code)
