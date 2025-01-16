@@ -2,10 +2,9 @@ import h5py
 import pandas as pd
 import os
 import re
-from collections import defaultdict
-import matplotlib.pyplot as plt
-import numpy as np
 from functools import reduce
+import time
+
 # Suppress unneccessary 3D package warning
 import warnings
 warnings.filterwarnings('ignore', message='Unable to import Axes3D')
@@ -120,16 +119,17 @@ def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file_path, cut
                 continue
             if 'ID' in cut_file:
                 continue
-            if is_test:
-                print(f'Fetching for {cut_file}')
-
             cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
             data_name = cut_file[:-4] # cut off .csv for naming
+            if is_test:
+                print(f'Fetching for {data_name}...')
             try:
                 value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
             except:
                 # Saving as None without quotes creates an anonymous dataset
                 value_at_event = 'None'
+                if is_test:
+                    print(f'Missing data at event: {event_number}')
             try:
                 event_group.create_dataset(data_name, data=value_at_event)
             except Exception as e:
@@ -142,12 +142,15 @@ def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=Fa
     """
     with h5py.File(trace_output_file_path, 'w') as trace_out:
         if is_test:
-            print(f'Collecting trace data...')
+            test_number = 15
+            print(f'Collecting trace data for {test_number} events in every file...')
         uid_group = trace_out.create_group('UID')
         series_group_created = False # track if there's already a series_group
-
+        # Find how long it takes on average to get trace data for a number of events
+        all_times = []
+        max_num_events = []
         for parsed_file in os.listdir(parsed_file_folder):
-
+            start_time = time.time()
             # Skip folders
             if not os.path.isfile(os.path.join(parsed_file_folder, parsed_file)):
                 continue
@@ -160,8 +163,9 @@ def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=Fa
                     series_group_created = True
                 
                 if is_test:
-                    event_numbers = event_numbers[:9]
-                    #print(f'Event numbers: {event_numbers}')
+                    num_of_events = len(event_numbers)
+                    max_num_events.append(num_of_events)
+                    event_numbers = event_numbers[:test_number]
 
                 for event_number in event_numbers:
                     try:
@@ -176,8 +180,15 @@ def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=Fa
 
                     except Exception as e:
                         print(f'Error generating trace output for event {event_number}:\n{e}')
+                end_time = time.time()
+                if is_test:
+                    seconds_per_event = (end_time - start_time)/test_number
+                    all_times.append(seconds_per_event)
         if is_test:
-            print(f'Completed collecting test trace data for series {series_number}.')
+            average_time_per_event = sum(all_times) / len(all_times)
+            max_num_events = sum(max_num_events)
+            max_average_seconds = max_num_events * average_time_per_event
+            print(f'This series has {max_num_events} events. It would take around {max_average_seconds} seconds, or {max_average_seconds/60:.2f} minutes to get trace data for all of them.')
 
 def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cut_output_file_path, is_test=False):
     """
@@ -189,12 +200,18 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
     se_indices = cdms_ids.loc[
         (cdms_ids['series_number'] == series_number)
     ].index.to_list()
+    num_indices = len(se_indices)
     if is_test:
-        se_indices = se_indices[:9]
+        test_number = 15
+        print(f'Total number of events in this series: {num_indices}. Testing {test_number}.')
+        se_indices = se_indices[:test_number]
     with h5py.File(cut_output_file_path, 'w') as cut_out:
         uid_group = cut_out.create_group('UID')
         series_group = uid_group.create_group(f'S{series_number}')
+        # Find how long it takes on average to get cut data for a single event and file
+        all_times = []
         for cut_file in os.listdir(cut_data_csv_folder):
+            start_time = time.time()
             if '.csv' not in cut_file:
                 continue
             if 'small' in cut_file:
@@ -204,7 +221,13 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
             cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
             data_name = cut_file[:-4] # cut off .csv for naming
             for index in se_indices:
-                event_number = cdms_ids.loc[cdms_ids['index'] == index, 'event_number'].values[0]
+                try:
+                    event_number = cdms_ids.loc[cdms_ids['index'] == index, 'event_number'].values[0]
+                except:
+                    if is_test:
+                        print(f'No event number found.')
+                    event_number = False
+                    continue
                 if f'E{event_number}' not in series_group:
                     event_group = series_group.create_group(f'E{event_number}')
                 else:
@@ -217,6 +240,16 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
                     event_group.create_dataset(data_name, data=value_at_event)
                 except Exception as e:
                     print(f'Error saving {data_name} for {event_number}:\n{e}')
+            end_time = time.time()
+            seconds_per_cut = end_time - start_time
+            all_times.append(seconds_per_cut)
+            if is_test:
+                print(f'{data_name} took {seconds_per_cut/60:.2f} minutes.\n')
+        average_seconds_per_cut = sum(all_times) / len(all_times)
+        if is_test:
+            print(f'On average, each event takes {average_seconds_per_cut/test_number:.2f} seconds per cut.')
+            minutes_for_full_series = (num_indices * (average_seconds_per_cut/test_number))/60
+            print(f'To get the cut data for every event in this series would take around {minutes_for_full_series:.2f} minutes, or around {minutes_for_full_series/60:.2f} hours.')
 
 def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
     """
@@ -364,7 +397,16 @@ def find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, 
         print(f'Overlapping indices:\n{overlapping_indices}')
     
     selected_rows = cdms_ids.iloc[overlapping_indices]
-    print(selected_rows)
+    selected_event_dictionary = {}
+    for _, row in selected_rows.iterrows():
+        series_number = row['series_number']
+        event_number = row['event_number']
+        if series_number not in selected_event_dictionary:
+            selected_event_dictionary[series_number] = [event_number]
+        else:
+            selected_event_dictionary[series_number].append(event_number)
+
+    return selected_event_dictionary
 
 def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=False):
     """
@@ -398,34 +440,18 @@ def find_valid_series_events(cut_data_file_path, cdms_ids, is_test=False):
         .to_dict()
     )
 
-    if is_test:
-        print('Valid series and events:')
-        if series_and_true_events == {}:
-            print('None')
-        for series, events in series_and_true_events.items():
-            print(f'Series: {series}, Num true events: {len(events)}')
-        print(f'{series_and_true_events}')
-
-        print('Invalid series and events:')
-        if series_and_false_events == {}:
-            print('None')
-        for series, events in series_and_false_events.items():
-            print(f'Series: {series}, Num false events: {len(events)}')
-        print(f'{series_and_false_events}')
-
-    else:
-        try:
-            first_valid_series, first_valid_event_list = next(iter(series_and_true_events.items()))
-            print(f'First valid series: {first_valid_series}')
-            print(f'First 10 valid events: {first_valid_event_list[0:10]}')
-        except Exception as e:
-            print(f"Failed to form valid series/event lists:\n{e}")
-
-        try:
-            first_invalid_series, first_invalid_event_list = next(iter(series_and_false_events.items()))
-            print(f'First invalid series: {first_invalid_series}')
-            print(f'First 10 invalid events: {first_invalid_event_list[0:10]}')
-        except Exception as e:
-            print(f"Failed to form invalid series/event lists:\n{e}")
-
     return series_and_true_events, series_and_false_events
+
+def fetch_events_from_dict(cdms_ids, selected_event_dictionary, parsed_hdf5_file_path, cut_data_csv_folder, trace_output_folder, cut_output_folder):
+    """
+    Use dictionary generated by find_overlapping_bool to fetch cut and 
+    trace data for every event found.
+    """
+    for series, events in selected_event_dictionary.items():
+        for event in events:
+            trace_out_filename = f'intersect_S{series}_E{event}_trace_out.hdf5'
+            trace_output_file_path = os.path.join(trace_output_folder, trace_out_filename)
+
+            cut_out_filename = f'intersect_S{series}_E{event}_cut_out.hdf5'
+            cut_output_file_path = os.path.join(cut_output_folder, cut_out_filename)
+            get_single_event_metadata(cdms_ids, event, parsed_hdf5_file_path, cut_data_csv_folder, trace_output_file_path, cut_output_file_path)
