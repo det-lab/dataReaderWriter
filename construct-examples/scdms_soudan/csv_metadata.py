@@ -188,7 +188,7 @@ def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=Fa
             average_time_per_event = sum(all_times) / len(all_times)
             max_num_events = sum(max_num_events)
             max_average_seconds = max_num_events * average_time_per_event
-            print(f'This series has {max_num_events} events. It would take around {max_average_seconds} seconds, or {max_average_seconds/60:.2f} minutes to get trace data for all of them.')
+            print(f'This series has {max_num_events} events. It would take around {max_average_seconds:.2f} seconds, or {max_average_seconds/60:.2f} minutes to get trace data for all of them.')
 
 def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cut_output_file_path, is_test=False):
     """

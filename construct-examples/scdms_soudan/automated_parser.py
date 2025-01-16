@@ -72,6 +72,6 @@ cdms_ids = csv_metadata.load_id_file(cdms_ids_file_path)
 
 cut_data_csv_folder = '/data3/afisher/cdmslite-run3-cuts-output/'
 trace_output_file_path = '/data3/afisher/test/parsed_files/trace_outputs/full_series_trace_test.hdf5'
-cut_output_file_path = '/data3/afisher/test/parsed_files/trace_outputs/full_series_cut_test.hdf5'
+cut_output_file_path = '/data3/afisher/test/parsed_files/cut_outputs/full_series_cut_test.hdf5'
 parsed_hdf5_file_path = '/data3/afisher/test/parsed_files/01150212_1819_F0001_parsed.hdf5'
 parse_series_folder(cdms_ids, parsed_file_folder, parsed_hdf5_file_path, cut_data_csv_folder, trace_output_file_path, cut_output_file_path)
