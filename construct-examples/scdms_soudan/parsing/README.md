@@ -22,7 +22,7 @@
 
 ## Overview
 
-The files `soudan_parser.py` and `scdms_soudan_parser.ipynb` are for generating `HDF5` files out of raw data created using the Super CDMS-Soudan data format. The main difference between the two files is in their format: `scdms_soudan_parser.ipynb` is broken up into different cells so that specific sections of the code can be tested independantly of each other. It also includes a cell after the parsing instructions to test the functionality of other modules, such as `scdms_soudan/csv_metadata.py`. `soudan_parser.py` should also avoid other testing convention such as print statements function tests. The two files should otherwise be identical to one another.
+The files `soudan_parser.py` and `scdms_soudan_parser.ipynb` are for generating `HDF5` files out of raw data created using the Super CDMS-Soudan data format. The main difference between the two files is in their format: `scdms_soudan_parser.ipynb` is broken up into different cells so that specific sections of the code can be tested independantly of each other. The two files should otherwise be identical to one another.
 
 The codes are designed for researchers working with Super CDMS-Soudan data.
 

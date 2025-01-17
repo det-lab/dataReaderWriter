@@ -1,7 +1,6 @@
 print('Running file')
 import sys
 sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/construct-examples/')
-sys.path.append('/home/afisher@novateur.com/dataReaderWriter/scdms_soudan/construct-examples/parsing/')
 import csv_metadata
 import os
 import time # Count how long it takes to run
@@ -34,32 +33,32 @@ def parse_directory(src_directory, parsed_file_folder, trace_output_directory, c
             print(f'Error parsing file:\n{e}')
 
 def parse_series_folder(cdms_ids, parsed_file_folder, parsed_hdf5_file_path, cut_data_csv_folder, trace_output_file_path, cut_output_file_path):
-    i = 0
+    # Generate full series cut file, and time generation
+    start_time = time.time()
+    try:
+        # Only need to run this on one file
+        print(f'Getting series cut data...')
+        _, event_numbers = csv_metadata.get_series_and_event_numbers(parsed_hdf5_file_path)
+        num_events = len(event_numbers)
+        csv_metadata.get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cut_output_file_path, is_test=False)
+        end_time = time.time()
+        print("Data collected.")
+        num_seconds = end_time - start_time
+        num_minutes = num_seconds/60
+        print(f'Execution time: {num_minutes:.2f} minutes')
+        print(f"get_series_cut_data took on average {num_seconds/num_events:.2f} seconds per event over {num_events} events.")
+    except Exception as e:
+        print(f"Error generating series cut metadata file:\n{e}")
+        end_time = time.time()
+        print(f'Attempt took {(end_time - start_time)/60:.2f} minutes.')
+
     for parsed_file in os.listdir(parsed_file_folder):
         # Avoid folders
         if not os.path.isfile(os.path.join(parsed_file_folder, parsed_file)):
             continue
         start_time = time.time()
+        print(f"Getting series trace data...")
         try:
-            # Only need to run this on one file
-            if i < 1:
-                print(f'Getting series cut data...')
-                csv_metadata.get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cut_output_file_path, is_test=False)
-                end_time = time.time()
-                print("Data collected.")
-                print(f'Execution time: {(end_time - start_time)/60:.2f} minutes')
-                i += 1
-            else:
-                continue
-        except Exception as e:
-            print(f"Error generating series cut metadata file:\n{e}")
-            # Exit to avoid recursively running longest function after failure
-            end_time = time.time()
-            print(f'Attempt took {(end_time - start_time)/60:.2f} minutes.')
-            i += 1
-        start_time = time.time
-        try:
-            print(f"Getting series trace data...")
             csv_metadata.get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=False)
             end_time = time.time
             print(f"Execution time: {(end_time - start_time)/60:.2f} minutes.")
@@ -67,6 +66,9 @@ def parse_series_folder(cdms_ids, parsed_file_folder, parsed_hdf5_file_path, cut
             end_time = time.time()
             print(f"Error generating series trace metadata file:\n{e}")
             print(f'Attempt took {(end_time - start_time)/60:.2f} minutes.')
+
+        
+        
 
 cdms_ids = csv_metadata.load_id_file(cdms_ids_file_path)
 

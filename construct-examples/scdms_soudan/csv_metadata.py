@@ -45,10 +45,11 @@ def get_series_and_event_numbers(parsed_hdf5_file_path):
                 event_numbers.append(event_number)
     return series_number, event_numbers
 
-def get_event_det_code_data(parsed_hdf5_file_path, series_number, event_number):
+def get_event_det_code_data(parsed_hdf5_file_path, event_number):
     """"
     Create a dictionary of trace data for a given series event.
     """
+    series_number = get_series_num(parsed_hdf5_file_path)
     base_path = f'S{series_number}/E{event_number}/'
     det_code_dict = {}
     with h5py.File(parsed_hdf5_file_path, "r") as parsed_f:
@@ -68,18 +69,10 @@ def get_event_det_code_data(parsed_hdf5_file_path, series_number, event_number):
     
     return det_code_dict
 
-def get_event_cut_data(cdms_ids, cut_data_file, series_number, event_number):
+def get_event_cut_data(se_index, cut_data):
     """
-    Find bool values for all cut data types for a given event.
+    Find bool value for a cut data file on a given event.
     """
-    se_index = cdms_ids.loc[
-        (cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number)
-        ].index
-    se_index = se_index[0]
-    # Load cut_data_file
-    cut_data = pd.read_csv(cut_data_file, header=None, names=['bool value'])
-    cut_data = cut_data.astype(bool)
-    # Match index on cut_data_file
     try:
         value_at_event = cut_data.iloc[se_index].item()
     except:
@@ -92,13 +85,16 @@ def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file_path, cut
     Create a trace output and cut output file for a single event.
     """
     series_number = get_series_num(parsed_hdf5_file_path)
+    index = cdms_ids.loc[
+        (cdms_ids['series_number'] == series_number) & (cdms_ids['event_number'] == event_number), 'index'
+        ].values[0]
     with h5py.File(trace_output_file_path, 'w') as trace_out:
         if is_test:
             print(f'Collecting trace data..')
         uid_group = trace_out.create_group('UID')
         series_group = uid_group.create_group(f'S{series_number}')
         event_group = series_group.create_group(f'E{event_number}')
-        det_code_dict = get_event_det_code_data(parsed_hdf5_file_path, series_number, event_number)
+        det_code_dict = get_event_det_code_data(parsed_hdf5_file_path, event_number)
         for det_code, datasets in det_code_dict.items():
             det_code_group = event_group.create_group(det_code)
             for dataset_name, data in datasets.items():
@@ -120,11 +116,14 @@ def get_single_event_metadata(cdms_ids, event_number, parsed_hdf5_file_path, cut
             if 'ID' in cut_file:
                 continue
             cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            cut_data = pd.read_csv(cut_file_path, header=None, names=['bool value'])
+            cut_data = cut_data.astype(bool)
             data_name = cut_file[:-4] # cut off .csv for naming
             if is_test:
                 print(f'Fetching for {data_name}...')
             try:
-                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+                value_at_event = get_event_cut_data(index, cut_data)
             except:
                 # Saving as None without quotes creates an anonymous dataset
                 value_at_event = 'None'
@@ -202,7 +201,7 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
     ].index.to_list()
     num_indices = len(se_indices)
     if is_test:
-        test_number = 15
+        test_number = 100
         print(f'Total number of events in this series: {num_indices}. Testing {test_number}.')
         se_indices = se_indices[:test_number]
     with h5py.File(cut_output_file_path, 'w') as cut_out:
@@ -218,7 +217,13 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
                 continue
             if 'ID' in cut_file:
                 continue
+            # Load cut_data_file
             cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
+            cut_data = pd.read_csv(cut_file_path, header=None, names=['bool value'])
+            cut_data = cut_data.astype(bool)
+            file_time = time.time()
+            if is_test:
+                print(f'Loading file took {file_time - start_time:.2f} seconds')
             data_name = cut_file[:-4] # cut off .csv for naming
             for index in se_indices:
                 try:
@@ -233,7 +238,7 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
                 else:
                     event_group = series_group[f'E{event_number}']
                 try:
-                    value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number)
+                    value_at_event = get_event_cut_data(index, cut_data)
                 except:
                     value_at_event = ''
                 try:
@@ -241,108 +246,15 @@ def get_series_cut_data(cdms_ids, parsed_hdf5_file_path, cut_data_csv_folder, cu
                 except Exception as e:
                     print(f'Error saving {data_name} for {event_number}:\n{e}')
             end_time = time.time()
-            seconds_per_cut = end_time - start_time
+            seconds_per_cut = end_time - file_time
             all_times.append(seconds_per_cut)
             if is_test:
-                print(f'{data_name} took {seconds_per_cut/60:.2f} minutes.\n')
+                print(f'{data_name} took {seconds_per_cut:.2f} seconds.\n')
         average_seconds_per_cut = sum(all_times) / len(all_times)
         if is_test:
             print(f'On average, each event takes {average_seconds_per_cut/test_number:.2f} seconds per cut.')
             minutes_for_full_series = (num_indices * (average_seconds_per_cut/test_number))/60
             print(f'To get the cut data for every event in this series would take around {minutes_for_full_series:.2f} minutes, or around {minutes_for_full_series/60:.2f} hours.')
-
-def get_series_full_metadata(cdms_ids, parsed_file_folder, cut_data_csv_folder, trace_output_file_path, cut_output_file_path, is_test=False):
-    """
-    Use all parsed files in a folder to generate cut and trace outputs
-    for every event in the series.
-    """
-    with h5py.File(trace_output_file_path, 'w') as trace_out:
-        if is_test:
-            print(f'Collecting trace data...')
-        uid_group = trace_out.create_group('UID')
-        series_group_created = False # track if there's already a series_group
-
-        for parsed_file in os.listdir(parsed_file_folder):
-
-            # Skip folders
-            if not os.path.isfile(os.path.join(parsed_file_folder, parsed_file)):
-                continue
-            
-            if parsed_file.endswith('_parsed.hdf5'):
-                parsed_file = os.path.join(parsed_file_folder, parsed_file)
-                series_number, event_numbers = get_series_and_event_numbers(parsed_file)
-                if not series_group_created:
-                    series_group = uid_group.create_group(f"S{series_number}")
-                    series_group_created = True
-                
-                if is_test:
-                    event_numbers = event_numbers[:9]
-                    #print(f'Event numbers: {event_numbers}')
-
-                for event_number in event_numbers:
-                    try:
-                        event_group = series_group.create_group(f'E{event_number}')
-
-                        det_code_dict = get_event_det_code_data(parsed_file, series_number, event_number)
-                        
-                        for det_code, datasets in det_code_dict.items():
-                            det_code_group = event_group.create_group(det_code)
-                            for dataset_name, data in datasets.items():
-                                det_code_group.create_dataset(dataset_name, data=data)
-
-                    except Exception as e:
-                        print(f'Error generating trace output for event {event_number}:\n{e}')
-        if is_test:
-            print(f'Completed collecting test trace data for series {series_number}.')
-
-    if is_test:
-        #Only use the first 10 lines for testing
-        cdms_ids = cdms_ids.head(10)
-        print(f'Collecting cut data...')
-    with h5py.File(cut_output_file_path, 'w') as cut_out:
-        uid_group = cut_out.create_group('UID')
-        series_group_created = False
-        for parsed_file in os.listdir(parsed_file_folder):
-            if parsed_file.endswith('_parsed.hdf5'):
-                try:
-                    parsed_file = os.path.join(parsed_file_folder, parsed_file)
-                    series_number, event_numbers = get_series_and_event_numbers(parsed_file)
-                    if not series_group_created:
-                        series_group = uid_group.create_group(f'S{series_number}')
-                        series_group_created = True
-                except Exception as e:
-                    print(f'Error getting series and event numbers:\n{e}')
-                if is_test:
-                    event_numbers = event_numbers[:9]
-                for event_number in event_numbers:
-                    event_group = series_group.create_group(f'E{event_number}')
-                    if is_test:
-                        print(f'Getting event {event_number} cut data...')
-
-                    for cut_file in os.listdir(cut_data_csv_folder):
-                        if '_small' in cut_file:
-                            continue
-                        if  'ID' in cut_file:
-                            continue
-                        if '.csv' not in cut_file:
-                            continue
-                        cut_file_path = os.path.join(cut_data_csv_folder, cut_file)
-                        try:
-                            if is_test:
-                                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=True)
-                            else:
-                                value_at_event = get_event_cut_data(cdms_ids, cut_file_path, series_number, event_number, is_test=False)
-                            event_group.create_dataset(cut_file, data=value_at_event)
-                        except:# Exception as e:
-                            event_group.create_dataset(cut_file, data='Null')
-                            #print(f'Error saving {cut_file} for event {event_number}:\n{e}')
-                    if is_test:
-                        print(f'Data saved.\n')
-            else:
-                continue
-            print(f'Finished {parsed_file}.')
-        if is_test:
-            print(f'Completed collecting test cut data for series {series_number}')
 
 def find_overlapping_bool(cdms_ids, cut_data_csv_folder, true_list, false_list, is_test=False):
     """
