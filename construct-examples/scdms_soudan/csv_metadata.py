@@ -170,7 +170,7 @@ def get_series_trace_data(parsed_file_folder, trace_output_file_path, is_test=Fa
                     try:
                         event_group = series_group.create_group(f'E{event_number}')
 
-                        det_code_dict = get_event_det_code_data(parsed_file, series_number, event_number)
+                        det_code_dict = get_event_det_code_data(parsed_file, event_number)
                         
                         for det_code, datasets in det_code_dict.items():
                             det_code_group = event_group.create_group(det_code)
