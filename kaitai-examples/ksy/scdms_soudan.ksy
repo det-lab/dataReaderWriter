@@ -14,14 +14,23 @@ seq:
     type: header_list
     repeat: expr
     repeat-expr: detector_hdr.repeat_value
-    
-  # Very computationally expensive  
+  
   - id: logical_rcrds
     type: logical_records
-    repeat: eos
 
 types:
 
+  format_word:
+    seq:
+      - id: daq_major
+        type: u1
+      - id: daq_minor
+        type: u1
+      - id: data_format_major
+        type: u1
+      - id: data_format_minor
+        type: u1
+        
   two_word_file_header:
     seq:
       - id: endian_indicator
@@ -44,55 +53,6 @@ types:
     instances:
       repeat_value:
         value: (config_record_len / 72) + (config_record_len / 144)
-        
-  header_list:
-    seq:
-      - id: header_num
-        type: u4
-        
-      - id: phonon_config
-        type: phonon_config_header
-        if: header_num == 0x10001
-        
-      - id: charge_config
-        type: charge_config_header
-        if: header_num == 0x10002
-  
-  logical_records:
-    seq:
-      - id: event_hdr
-        type: event_header
-        
-      - id: admin_rcrd
-        type: administrative_record
-        
-      - id: trigger_rcrd
-        type: trigger_record_format
-      
-      - id: tlb_trig_mask_rcrd
-        type: tlb_trigger_mask_record
-      
-      - id: gps_data
-        type: gps_data
-        
-      - id: trace_rcrd
-        type: trace_data
-        repeat: expr
-        repeat-expr: _root.detector_hdr.repeat_value
-        
-      - id: soudan_buffer
-        type: soudan_history_buffer
-        
-  format_word:
-    seq:
-      - id: daq_major
-        type: u1
-      - id: daq_minor
-        type: u1
-      - id: data_format_major
-        type: u1
-      - id: data_format_minor
-        type: u1
         
   phonon_config_header:
     seq:
@@ -142,6 +102,19 @@ types:
       - id: trace_len
         type: s4
         
+  header_list:
+    seq:
+      - id: header_num
+        type: u4
+        
+      - id: phonon_config
+        type: phonon_config_header
+        if: header_num == 0x10001
+        
+      - id: charge_config
+        type: charge_config_header
+        if: header_num == 0x10002
+        
   event_header:
     seq:
       - id: event_header_word
@@ -187,14 +160,9 @@ types:
           0x8: 137Cs Calibration
           0x9: 133Ba Calibration
           0xa: Veto OR Multiplicity Trigger
-        
+          
   administrative_record:
     seq:
-      - id: header_num
-        type: u4
-        doc: |
-          0x0000 0002: Admin, Long Series Num
-                       (Event Num, Timestamp, Livetime, ...)
       - id: admin_len
         type: u4
         doc: |
@@ -226,10 +194,6 @@ types:
         
   trace_record:
     seq:
-      - id: header_num
-        type: u4
-        doc: |
-          0x0000 0011
       - id: trace_len
         type: u4
       - id: trace_bookkeeping_header
@@ -290,10 +254,6 @@ types:
         
   soudan_history_buffer:
     seq:
-      - id: history_buffer_header
-        type: u4
-        doc: |
-          0x0000 0021
       - id: history_buffer_len
         type: u4
       - id: num_time_nvt
@@ -321,34 +281,8 @@ types:
         repeat: expr
         repeat-expr: num_trigger_mask_words_per_time * num_trigger_times
         
-  trigger_record_format:
-    seq:
-      - id: trigger_header
-        type: u4
-      - id: trigger_len
-        type: u4
-      - id: trigger_time
-        type: u4
-      - id: individual_trigger_mask
-        type: u4
-        repeat: expr
-        repeat-expr: 6
-        
-  tlb_trigger_mask_record:
-    seq:
-      - id: tlb_mask_header
-        type: u4
-      - id: tlb_len
-        type: u4
-      - id: tower_mask
-        type: u4
-        repeat: expr
-        repeat-expr: 6
-        
   gps_data:
     seq:
-      - id: tlb_mask_header
-        type: u4
       - id: len
         type: u4
       - id: gps_year_day
@@ -362,72 +296,128 @@ types:
       len_value:
         value: '(len > 0) ? 4 : 0'
         
-  #detector_trigger_threshold_data:
-  #  seq:
-  #    - id: threshold_header
-  #      type: u4
-  #    - id: len_to_next_header
-  #      type: u4
-  #    - id: minimum_voltage_level
-  #      type: u4
-  #    - id: maximum_voltage_level
-  #      type: u4
-  #    - id: dynamic_range
-  #      type: u4
-  #    - id: tower_num
-  #      type: u4
-  #    - id: detector_codes
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 6
-  #    - id: operations_codes
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 9
-  #    - id: adc_values
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 54
+  trigger_record_format:
+    seq:
+      - id: trigger_len
+        type: u4
+      - id: trigger_time
+        type: u4
+      - id: individual_trigger_mask
+        type: u4
+        repeat: expr
+        repeat-expr: 6
         
-  #detector_trigger_rates:
-  #  seq:
-  #    - id: detector_trigger_header
-  #      type: u4
-  #    - id: len_to_next_header
-  #      type: u4
-  #    - id: clocking_interval
-  #      type: u4
-  #    - id: tower_num
-  #      type: u4
-  #    - id: detector_codes
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 6
-  #    - id: j_codes
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 5
-  #    - id: counter_values
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: 30
+  tlb_trigger_mask_record:
+    seq:
+      - id: tlb_len
+        type: u4
+      - id: tower_mask
+        type: u4
+        repeat: expr
+        repeat-expr: 6
         
-  #veto_trigger_rates:
-  #  seq:
-  #    - id: veto_trigger_header
-  #      type: u4
-  #    - id: len_to_next_header
-  #      type: u4
-  #    - id: clocking_interval
-  #      type: u4
-  #    - id: num_entries
-  #      type: u4
-  #    - id: detector_code
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: num_entries
-  #    - id: counter_value_det_code
-  #      type: u4
-  #      repeat: expr
-  #      repeat-expr: num_entries
+  detector_trigger_threshold_data:
+    seq:
+      - id: len_to_next_header
+        type: u4
+      - id: minimum_voltage_level
+        type: u4
+      - id: maximum_voltage_level
+        type: u4
+      - id: dynamic_range
+        type: u4
+      - id: tower_num
+        type: u4
+      - id: detector_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+      - id: operations_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 9
+      - id: adc_values
+        type: u4
+        repeat: expr
+        repeat-expr: 54
+       
+  detector_trigger_rates:
+    seq:
+      - id: len_to_next_header
+        type: u4
+      - id: clocking_interval
+        type: u4
+      - id: tower_num
+        type: u4
+      - id: detector_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 6
+      - id: j_codes
+        type: u4
+        repeat: expr
+        repeat-expr: 5
+      - id: counter_values
+        type: u4
+        repeat: expr
+        repeat-expr: 30
+       
+  veto_trigger_rates:
+    seq:
+      - id: len_to_next_header
+        type: u4
+      - id: clocking_interval
+        type: u4
+      - id: num_entries
+        type: u4
+      - id: detector_code
+        type: u4
+        repeat: expr
+        repeat-expr: num_entries
+      - id: counter_value_det_code
+        type: u4
+        repeat: expr
+        repeat-expr: num_entries
         
+  logical_records:
+    seq:
+      - id: event_hdr
+        type: event_header
+        
+      - id: next_sect
+        type: next_section
+        repeat: expr
+        repeat-expr: 10
+
+  next_section:
+    seq:
+      - id: next_header
+        type: u4
+        enum: record_type
+        
+      - id: section
+        type:
+          switch-on: next_header
+          cases:
+            'record_type::administrative_record': administrative_record
+            'record_type::trace_data': trace_data
+            'record_type::soudan_history_buffer': soudan_history_buffer
+            'record_type::gps_data': gps_data
+            'record_type::trigger_record_format': trigger_record_format
+            'record_type::tlb_trigger_mask_record': tlb_trigger_mask_record
+            #'record_type::detector_trigger_threshold_data': detector_trigger_threshold_data
+            'record_type::detector_trigger_rates': detector_trigger_rates
+            'record_type::veto_trigger_rates': veto_trigger_rates
+           
+    enums:
+      record_type:
+        0x00000002: administrative_record
+        0x00000011: trace_data
+        0x00000021: soudan_history_buffer
+        0x00000060: gps_data
+        0x00000080: trigger_record_format
+        0x00000081: tlb_trigger_mask_record
+        # Documented header num for dttd and soudan buffer are identical
+        #0x00000021: detector_trigger_threshold_data
+        0x00000022: detector_trigger_rates
+        0x00000031: veto_trigger_rates
