@@ -1,37 +1,63 @@
 meta:
-  id: wave_data
-  file-extension: bin
+  id: test
+  file-extension: test
   endian: le
-
+  
 seq:
-  - id: num_hr_records
-    type: u4
-  - id: num_mid_records
-    type: u4
-  - id: num_peak_records
-    type: u4
+  - id: lengths
+    type: full_mid_peak_lens
+  
+  - id: f_data
+    type: full_data
 
-  - id: hr_records
-    type: record
-    repeat: expr
-    repeat-expr: num_hr_records
-
-  - id: mid_records
-    type: record
-    repeat: expr
-    repeat-expr: num_mid_records
-
-  - id: peak_records
-    type: record
-    repeat: expr
-    repeat-expr: num_peak_records
-
+  - id: m_data
+    type: mid_data
+  
+  - id: p_data
+    type: peak_data
+  
 types:
-  record:
+  full_mid_peak_lens:
     seq:
-      - id: identifier
-        type: str
-        encoding: ASCII
-        size: 10
-      - id: value
-        type: f8
+      - id: full_len
+        type: u4
+      - id: mid_len
+        type: u4
+      - id: peak_len
+        type: u4
+
+  full_data:
+    seq:
+      - id: x_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.full_len
+
+      - id: y_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.full_len
+  
+  mid_data:
+    seq:
+      - id: x_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.mid_len
+
+      - id: y_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.mid_len
+  
+  peak_data:
+    seq:
+      - id: x_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.peak_len
+
+      - id: y_data
+        type: f4
+        repeat: expr
+        repeat-expr: _root.lengths.peak_len
